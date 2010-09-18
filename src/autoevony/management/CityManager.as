@@ -1036,11 +1036,11 @@ package autoevony.management
 				
 				task = "QuickTimer: Check quests";
 				if (playerTimingAllowed("quest1", 180)) {
-					logDebugMsg(DEBUG_NORMAL, task );
-					ActionFactory.getInstance().getQuestCommands().getQuestType(castle.id, 1);
-					ActionFactory.getInstance().getQuestCommands().getQuestType(castle.id, 3);
+					logDebugMsg(DEBUG_NORMAL, task );				
+					ActionFactory.getInstance().getQuestCommands().getQuestType(castle.id, 1 ,checkQuestType);
+					ActionFactory.getInstance().getQuestCommands().getQuestType(castle.id, 3 ,checkQuestType);
 				}
-
+		
 				task = "find evasion field";
 				if (evasionFieldId == -1) findEvasionFieldId();
 				
@@ -1079,6 +1079,59 @@ package autoevony.management
 				}
 			}
 		}
+		
+		
+		private function checkQuestType(questType:QuestTypeResponse) : void
+		{
+			if (questType.ok != 1)
+			{
+				logDebugMsg(DEBUG_NORMAL, "Error executing completequests: " + questType.errorMsg );
+				return;
+			}
+
+			trace('checkQuestType');
+			var completed:int = 0;
+			for each (var qt:QuestTypeBean in questType.typesArray)
+			{
+				if (qt.isFinish)
+				{
+					QuestParams.findQuestCount++;
+					ActionFactory.getInstance().getQuestCommands().getQuestList(castle.id, qt.typeId, awardQuests);
+					completed++;
+				}
+			}
+			if (completed == 0)
+			{
+				logDebugMsg(DEBUG_NORMAL, "No Finished Quests")
+			}
+
+		}
+		
+		private function awardQuests(quests:QuestListResponse) : void
+		{
+			if (quests.ok != 1)
+			{
+				logMessage( "Error executing completequests: " + quests.errorMsg );
+				return;
+			}
+			trace("Enter awardQuests");
+			for each (var quest:QuestBean in quests.questsArray)
+			{
+				trace("Quest: " + quest.description + " Finished: " + quest.isFinish + " Award: " + quest.award);
+				if (quest.isFinish)
+				{
+					logMessage( quest.name + " quest complete. Award item(s): " + quest.award);
+					ActionFactory.getInstance().getQuestCommands().award(castle.id, quest.questId);
+				}
+			}
+
+			QuestParams.findQuestCount--;
+
+			if (QuestParams.findQuestCount <= 0) {
+				QuestParams.findQuestCastleId = 0;
+            }
+		}				
+		
 		private static var playerTimingList:Array = new Array();		
 		private static function playerTimingAllowed(key:String, interval:int, test:Boolean = false) : Boolean {
 			if (playerTimingList[key] == undefined) {

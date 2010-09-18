@@ -848,7 +848,7 @@ package autoevony.scripts
 		 * buildingType: one of the BuildingConstants
 		 * buildPolicy: which building should be selected for desctruction
 		 */
-		public function demo(buildingType:String="*", buildPolicy:String="HighestLevel"):void
+		public function demo(buildingType:String="*", buildPolicy:String="HighestLevel", buildlevel:int = 9 ):void
 		{
 			var typeId:int = BuildingType.fromString(buildingType);
 			if (typeId == -1) {
@@ -869,10 +869,10 @@ package autoevony.scripts
 			var f:BuildingBean = BuildSelectionPolicy.findByPolicy(
 				castle.buildingsArray.toArray(),
 				buildingType,
-				buildPolicy);
+				buildPolicy,
+				buildlevel );
 
-			if (f == null)
-			{
+			if (f == null) {
 				onCommandFinished(
 					new ScriptError(
 						"Unable to perform demolish.  No buildings below max level (10) or unable to find " + buildingType,
