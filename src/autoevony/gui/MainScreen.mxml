@@ -118,8 +118,11 @@
 				function (event:MouseEvent) : void {
 					if (event.target is UITextField) {
 						var field:UITextField = event.target as UITextField;
-						if (field.text.indexOf("AutoEvony") == 0) {
+						if (field.text.indexOf("AutoEvony ") == 0) {
 							navigateToURL(new URLRequest("http://www.wiki-site.com/index.php/Evobot_City_Management"), "_blank");
+						}
+						if (field.text.indexOf("AutoEvony2") == 0) {
+							navigateToURL(new URLRequest("http://autoevony.kjresources.com/forum/"), "_blank");
 						}
 					}
 				});
@@ -1367,7 +1370,8 @@
 					<mx:Button id="pauseButton" label="Pause" enabled="true" click="pauseQueue()" fontSize="10"/>
 					<mx:Button id="refreshButton" label="Refresh" enabled="true" click="refresh()" fontSize="10"/>
 					<mx:Button label="Settings" id="settingsButton" enabled="true" click="showSettings()" fontSize="10" />
-					<mx:Label text="AutoEvony - http://www.wiki-site.com/index.php/Evobot_City_Management" useHandCursor="true" width="100%" fontWeight="bold"/>
+					<mx:Label text="AutoEvony - Wiki" useHandCursor="true" width="100%" fontWeight="bold"/>
+					<mx:Label text="AutoEvony2 - Forums" useHandCursor="true" width="100%" fontWeight="bold"/>
 					<ns1:CityTopView id="_Playerstats"></ns1:CityTopView>
 				</mx:HBox>
 				<mx:ToggleButtonBar id="citiesTab" direction="horizontal"  fontSize="9" paddingLeft="1" horizontalGap="1"/>
