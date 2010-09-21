@@ -491,7 +491,7 @@
 				<mx:Canvas label="Goals" width="100%" height="100%" id="goalsCanvas">
 					<mx:VBox width="100%" height="100%" verticalGap="0">
 						<mx:HDividedBox id="goalshelpDivider" width="100%" height="100%" horizontalGap="0">
-							<mx:TextArea id="goalsTextArea" width="100%" height="100%"  color="#261F30"/>
+							<mx:TextArea id="goalsTextArea" width="100%" height="100%" />
 							<local:HelpPanel id="goalshelp" helpType="Goals" visible="false" width="0" height="100%"/>
 						</mx:HDividedBox>					
 						<mx:HBox width="100%" height="30" verticalAlign="middle" horizontalAlign="right" paddingRight="1">
@@ -503,7 +503,7 @@
 				<mx:Canvas label="Script" width="100%" height="100%" id="scriptCanvas">
 					<mx:VBox width="100%" height="100%">
 						<mx:HDividedBox id="scripthelpDivider" width="100%" height="100%" horizontalGap="0">
-							<mx:TextArea id="scriptTextArea" width="100%" height="100%" color="#0B1A0D"/>
+							<mx:TextArea id="scriptTextArea" width="100%" height="100%"/>
 							<local:HelpPanel id="scripthelp" helpType="Script" visible="false" width="0" height="100%"/>
 						</mx:HDividedBox>
 						<mx:HBox width="100%" height="30" verticalAlign="middle" horizontalAlign="right" paddingRight="1">
@@ -525,7 +525,7 @@
 					<mx:DataGrid dataProvider="{infoData}" width="100%" height="100%" allowMultipleSelection="false"
 						doubleClickEnabled="false" dragEnabled="false" editable="false" resizableColumns="true" wordWrap="false" 
 						showHeaders="false" sortableColumns="false" visible="true" allowDragSelection="false" draggableColumns="false" enabled="true" 
-						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16" color="#000000">
+						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16">
 						<mx:columns>
 							<mx:DataGridColumn headerText="" dataField="col1" width="0.25"/>
 							<mx:DataGridColumn headerText="" dataField="col2" width="0.35" showDataTips="true"/>

@@ -70,7 +70,6 @@ package autoevony.management
 		private static var DEBUG_NPCATTACK:int = 11;
 		private static var DEBUG_WARREPORT:int = 12;
 		private static var DEBUG_BUILDNPC:int = 13;
-		private static var DEBUG_TRADING:int = 15;
 				
 		private static var GATE_AUTO:int = 0;
 		private static var GATE_OPEN:int = 1;
@@ -814,7 +813,7 @@ package autoevony.management
 				resetEstResource();
 
 				task = "handle trading";
-				if (getConfig(CONFIG_TRADING) > 0) handleTradingNew();
+				if (getConfig(CONFIG_TRADING) > 0) handleTrading();
 				
 				task = "update building and research requirement";
 				if (getConfig(CONFIG_BUILDING) > 0 || getConfig(CONFIG_RESEARCH) > 0)
@@ -1643,15 +1642,11 @@ package autoevony.management
 		private function meetResourceConditionForUpgradingTo(cond:CityCondition) : Boolean {
 			var condBean:ConditionBean = getConditionBeanForUpgradingTo(cond);
 			if (condBean == null) return false;
-			logDebugMsg(DEBUG_TRADING, "Trading: Resources Needed for next Upgrade of " + cond.name );
+			
 			for each (var resName:String in resourceIntNames) {
-				logDebugMsg(DEBUG_TRADING, "Trading: : Need " + condBean[resName] + " have " + estResource[resName] );
-				if (condBean[resName] > estResource[resName]) {
-					logDebugMsg(DEBUG_TRADING, "Trading: We do not have enough " + resName );
-					return false; 
-				}
+				if (condBean[resName] > estResource[resName]) return false;
 			}
-			logDebugMsg(DEBUG_TRADING, "Trading: We have enough to Upgrade " + cond.name );
+			
 			return true;
 		}
 		
@@ -1716,10 +1711,7 @@ package autoevony.management
 
 		private function futureTechCondition() : CityCondition {
 			var res:AvailableResearchListBean = getActiveResearch();
-			if (res != null && res.endTime - Utils.getServerTime() > 3*3600*1000) { 
-				logDebugMsg(DEBUG_TRADING , "Trading: More than 3 hours until Tech is complete " );
-				return null; 
-			}
+			if (res != null && res.endTime - Utils.getServerTime() > 3*3600*1000) return null;
 			var bestCond:CityCondition = null;
 			var bestValue:int = 100000000;
 			
@@ -1740,7 +1732,6 @@ package autoevony.management
 					bestCond = cond;
 				}
 			}			
-			logDebugMsg(DEBUG_TRADING , "Trading: Tech next in line... " + bestCond.name );
 			return bestCond;
 		}
 
@@ -1777,10 +1768,7 @@ package autoevony.management
 		
 		private function futureBuildingCondition() : CityCondition {
 			var building:BuildingBean = getActiveBuilding();
-			if (building != null && building.endTime - Utils.getServerTime() > 3*3600*1000) {
-				logDebugMsg(DEBUG_TRADING , "Trading: More than 3 hours until current building is finished" ); 
-				return null;	
-			}
+			if (building != null && building.endTime - Utils.getServerTime() > 3*3600*1000) return null;
 			
 			var bestCond:CityCondition = null;
 			var bestValue:int = 100000000;
@@ -1801,10 +1789,9 @@ package autoevony.management
 				var value:int = Math.max(condBean.food, condBean.gold, condBean.wood, condBean.stone, condBean.iron);
 				if (value < bestValue) {
 					bestValue = value;
-					bestCond = cond;					
+					bestCond = cond;
 				}
 			}			
-			logDebugMsg(DEBUG_TRADING , "Trading: Building Next In Line... " + bestCond.name ); 
 			return bestCond;
 		}
 		
@@ -1979,7 +1966,6 @@ package autoevony.management
 		private function doSell(amount:int, resType:int, needGoldNow:Boolean = false) : void {
 			for each (var trade:TradeBean in tradesArray) {
 				if (trade.resType == resType && trade.tradeType == TradeConstants.TRADE_TYPE_SELL) {
-					logDebugMsg(DEBUG_TRADING , "Trading: Need Gold NOW! Modify the price existing trade for " + trade.resourceName + " " );
 					doModifySell(trade, amount, needGoldNow);
 					return;
 				}
@@ -1988,9 +1974,7 @@ package autoevony.management
 			amount = Utils.roundAmount(amount);
 			if (amount == 0) return;
 			
-			if (tradesArray.length >= getBuildingLevel(BuildingConstants.TYPE_MARKET)) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Cannot Sell Market Full" );
-			};
+			if (tradesArray.length >= getBuildingLevel(BuildingConstants.TYPE_MARKET)) return;
 			var factor:Number = Math.random() * 0.1 + .1; // a random number from 0.1 to 0.2
 			var price:Number = sellPrice(resType) * factor + buyPrice(resType) * (1-factor);
 
@@ -2006,9 +1990,7 @@ package autoevony.management
 				price = sellPrice(resType);
 
 			if (amount > 9999999) amount = 9999999;
-			if (estResource.gold < price*amount*0.005) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Not Enough Gold To Sell " );
-			};
+			if (estResource.gold < price*amount*0.005) return;
 			
 			logMessage("Sell " + resourceNames[resType] + ": " + amount + " at " + price + ", range: " + sellPrice(resType) + "-" + buyPrice(resType));
 			ActionFactory.getInstance().getCastleCommands().checkOutUpgrade(castle.id, MARKET_POSITION);
@@ -2022,8 +2004,7 @@ package autoevony.management
 		private function doBuy(amount:int, resType:int, needResourceNow:Boolean = false) : void {
 			for each (var trade:TradeBean in tradesArray) {
 				if (trade.resType == resType && trade.tradeType == TradeConstants.TRADE_TYPE_BUY) {
-					logDebugMsg(DEBUG_TRADING , "Trading: Need Resources NOW! Modify the price existing trade for " + trade.resourceName + " " );
-					doModifyBuy(trade, amount, needResourceNow);					
+					doModifyBuy(trade, amount, needResourceNow);
 					return;
 				}
 			}
@@ -2031,10 +2012,7 @@ package autoevony.management
 			amount = Utils.roundAmount(amount);
 			if (amount == 0) return;
 
-			if (tradesArray.length >= getBuildingLevel(BuildingConstants.TYPE_MARKET)) {
-				logDebugMsg(DEBUG_TRADING , "Trading Error: Cannot Buy Market Full" );
-				return;
-			} 
+			if (tradesArray.length >= getBuildingLevel(BuildingConstants.TYPE_MARKET)) return;
 			
 			var factor:Number = Math.random() * 0.1 + .1; // a random number from 0.1 to 0.2
 			var price:Number = buyPrice(resType) * factor + sellPrice(resType) * (1-factor);
@@ -2050,14 +2028,13 @@ package autoevony.management
 				price = buyPrice(resType);
 			
 			if (amount > 9999999) amount = 9999999;
-			if (estResource.gold < price*amount*1.005) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Not Enough Gold to Buy " );
-				return;	
-			}
+			if (estResource.gold < price*amount*1.005) return;
 			
 			logMessage("Buy " + resourceNames[resType] + ": " + amount + " at " + price + ", range: " + sellPrice(resType) + "-" + buyPrice(resType));
 			ActionFactory.getInstance().getCastleCommands().checkOutUpgrade(castle.id, MARKET_POSITION);
-			ActionFactory.getInstance().getTradeCommands().newTrade( castle.id, resType, TradeConstants.TRADE_TYPE_BUY, amount, "" + price);
+			ActionFactory.getInstance().getTradeCommands().newTrade(
+				castle.id, resType, TradeConstants.TRADE_TYPE_BUY, 
+				amount, "" + price);
 			estResource.gold -= amount * price * 1.005;
 		}
 		
@@ -2101,24 +2078,14 @@ package autoevony.management
 			r.stone = 0;
 			
 			if (doingComfortRelief || buyPrice(TradeConstants.RES_TYPE_FOOD) < 0.08) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Reserved Resources... Comfort Releif Food " + (4*resource.maxPopulation) );
 				r.food += 4*resource.maxPopulation;
 			}
 			
 			if (healingGoldRequired > 0) r.gold += healingGoldRequired;
-			if (resource.herosSalary > resource.curPopulation) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Reserved Resources... Heroes pay > POP " + (resource.herosSalary - resource.curPopulation) ); 
-				r.gold += resource.herosSalary - resource.curPopulation; 
-			}
-			if (resource.troopCostFood > resource.food.increaseRate) { 
-				logDebugMsg(DEBUG_TRADING , "Trading: Reserved Resources... Troop Food " + (resource.troopCostFood - resource.food.increaseRate) );
-				r.food += resource.troopCostFood - resource.food.increaseRate; 
-			}
+			if (resource.herosSalary > resource.curPopulation) r.gold += resource.herosSalary - resource.curPopulation;
+			if (resource.troopCostFood > resource.food.increaseRate) r.food += resource.troopCostFood - resource.food.increaseRate;
 
-			if (resource.complaint >= 50) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Reserved Resources... Grev >= 50 " + resource.complaint );
-				return r;
-			} 
+			if (resource.complaint >= 50) return r;
 
 			var buildingReq:ConditionBean = futureBuildingGoal();
 			var techReq:ConditionBean = futureTechGoal();
@@ -2128,12 +2095,6 @@ package autoevony.management
 				r.wood += buildingReq.wood;
 				r.stone += buildingReq.stone;
 				r.iron += buildingReq.iron;
-				logDebugMsg(DEBUG_TRADING , "Trading: Needed to Build " );
-				logDebugMsg(DEBUG_TRADING , "Trading: Gold : " + buildingReq.gold );
-				logDebugMsg(DEBUG_TRADING , "Trading: Food : " + buildingReq.food );
-				logDebugMsg(DEBUG_TRADING , "Trading: Wood : " + buildingReq.wood );
-				logDebugMsg(DEBUG_TRADING , "Trading: Stone: " + buildingReq.stone );
-				logDebugMsg(DEBUG_TRADING , "Trading: Iron : " + buildingReq.iron );
 			}
 			if (techReq != null) {
 				r.gold += techReq.gold;
@@ -2141,32 +2102,13 @@ package autoevony.management
 				r.wood += techReq.wood;
 				r.stone += techReq.stone;
 				r.iron += techReq.iron;
-				logDebugMsg(DEBUG_TRADING , "Trading: Needed to Research " );
-				logDebugMsg(DEBUG_TRADING , "Trading: Gold : " + techReq.gold );
-				logDebugMsg(DEBUG_TRADING , "Trading: Food : " + techReq.food );
-				logDebugMsg(DEBUG_TRADING , "Trading: Wood : " + techReq.wood );
-				logDebugMsg(DEBUG_TRADING , "Trading: Stone: " + techReq.stone );
-				logDebugMsg(DEBUG_TRADING , "Trading: Iron : " + techReq.iron );
 			}
 			if (buildCityLocation != -1) {
 				r.gold += 10000; r.food += 10000; r.wood += 10000; r.stone += 10000; r.iron += 10000;
-				logDebugMsg(DEBUG_TRADING , "Trading: Needed to Build City" );
-				logDebugMsg(DEBUG_TRADING , "Trading: Gold : " + 10000 );
-				logDebugMsg(DEBUG_TRADING , "Trading: Food : " + 10000 );
-				logDebugMsg(DEBUG_TRADING , "Trading: Wood : " + 10000 );
-				logDebugMsg(DEBUG_TRADING , "Trading: Stone: " + 10000 );
-				logDebugMsg(DEBUG_TRADING , "Trading: Iron : " + 10000 );
-
 			}
 			
-			logDebugMsg(DEBUG_TRADING , "Trading: Day's worth of Food " + getReservedFood() );
 			r.food += getReservedFood();
-			
-			if (resource.herosSalary > resource.curPopulation) { 
-				logDebugMsg(DEBUG_TRADING , "Trading: Day's worth of Hero Salary" );
-				logDebugMsg(DEBUG_TRADING , "Trading: Gold : " + (23*(resource.herosSalary - resource.curPopulation)));
-				r.gold += 23*(resource.herosSalary - resource.curPopulation);					
-			}
+			if (resource.herosSalary > resource.curPopulation) r.gold += 23*(resource.herosSalary - resource.curPopulation);
 
 			return r;
 		}
@@ -2212,259 +2154,8 @@ package autoevony.management
 				}
 			}
 		}
-		
-		private function handleTradingNew() : void {
-			if (getConfig(CONFIG_TRADING) <= 0) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Trading Not Turned On " ); 
-				return 
-			};
-			if (tradingLimited) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Trading Limited " ); 
-				return 
-			};
-			if (!marketReady()) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Market Data not fully Initialized" );
-				return
-			};
-						
-						
-			var desperate:Boolean = false;
-			if (getConfig(CONFIG_TRADING) >= 2) {
-				if (getConfig(CONFIG_BUILDING) > 0) {
-					var bCond:CityCondition = futureBuildingCondition();
-					if (bCond != null && !meetResourceConditionForUpgradingTo(bCond)) desperate = true;
-				}
-				if (getConfig(CONFIG_RESEARCH) > 0) {
-					var tCond:CityCondition = futureTechCondition();					
-					if (tCond != null && !meetResourceConditionForUpgradingTo(tCond)) desperate = true;	
-				}
-	
-				if (tradesArray.length > 0 && (desperate || playerTimingAllowed("reprice", 300))) {
-					for (var i:int = 0; i < 4; i++) {
-						doBuy(0, i, desperate);
-						doSell(0, i, desperate);
-					}
-					var des:String = (desperate = true) ? "True" : "False"; 
-					logDebugMsg(DEBUG_TRADING , "Trading: Trading Desperate = " + des );
-					return;
-				}
-			}
-			
-			logDebugMsg(DEBUG_TRADING , "Trading: Trading Not Desperate ");
-			
-			var maxProduction:Number = Math.max(resource.food.increaseRate, resource.wood.increaseRate, resource.stone.increaseRate, resource.iron.increaseRate);
-			var reserved:ResourceBean = getReservedResource();
-			
-			var factors:Array = new Array(1, 2, 1, 1);
-			var nCurrResource:Array = new Array(estResource.food, estResource.wood, estResource.stone, estResource.iron);
 
-			// resource available, for selling, do not count those in transist
-			logDebugMsg(DEBUG_TRADING , "Trading: Resources Available for Selling: ");
-			logDebugMsg(DEBUG_TRADING , "Food:  " + (estResource.food-reserved.food ));
-			logDebugMsg(DEBUG_TRADING , "Wood:  " + (estResource.wood+resource.wood.increaseRate/4-reserved.wood));
-			logDebugMsg(DEBUG_TRADING , "Stone: " + (estResource.stone-reserved.stone));
-			logDebugMsg(DEBUG_TRADING , "Iron:  " + (estResource.iron-reserved.iron));
-			
-			var nSellResource:Array = new Array(estResource.food-reserved.food, estResource.wood+resource.wood.increaseRate/4-reserved.wood, estResource.stone-reserved.stone, estResource.iron-reserved.iron);
-			var nResource:Array = new Array(estResource.food-reserved.food, estResource.wood+resource.wood.increaseRate/4-reserved.wood, estResource.stone-reserved.stone, estResource.iron-reserved.iron);
-			var goldAdjust:Number = 0;
-			
-			// adjust these numbers to take into account transacting and pending orders
-			for each (var transTrade:TransingTradeBean in transingTradesArray) {
-				nResource[transTrade.resType] += transTrade.amount;
-			}
-			
-			for each (var trade:TradeBean in tradesArray) {
-				if (trade.tradeType == TradeConstants.TRADE_TYPE_BUY) {
-					nResource[trade.resType] += (trade.amount-trade.dealedAmount);
-				} else if (trade.tradeType == TradeConstants.TRADE_TYPE_SELL) {
-					nResource[trade.resType] += (trade.amount-trade.dealedAmount);
-				}
-			}
-			
-			logDebugMsg(DEBUG_TRADING , "Trading: Current Gold " + estResource.gold + " - Reserved Gold: " + reserved.gold + " = " + (estResource.gold-reserved.gold) );
-			
-			var total:Number = ( estResource.gold-reserved.gold ) + 
-				nResource[TradeConstants.RES_TYPE_FOOD]*buyPrice(TradeConstants.RES_TYPE_FOOD) +
-				nResource[TradeConstants.RES_TYPE_WOOD]*sellPrice(TradeConstants.RES_TYPE_WOOD) +
-				nResource[TradeConstants.RES_TYPE_STONE]*buyPrice(TradeConstants.RES_TYPE_STONE) +
-				nResource[TradeConstants.RES_TYPE_IRON]*buyPrice(TradeConstants.RES_TYPE_IRON);
-			
-			
-			logDebugMsg(DEBUG_TRADING , "Trading: Total = " + total + " Food: " + nResource[TradeConstants.RES_TYPE_FOOD] );	
-			if (total < 0 && nResource[TradeConstants.RES_TYPE_FOOD] > 0) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Exiting ... total < 0 && food > 0 ");
-				return; 
-			}
-			
-			
-			if (!cityTimingAllowed("trading1", 60)) { 		
-				logDebugMsg(DEBUG_TRADING , "Trading: Skipping citytiming ");
-				return; 
-			}
-
-			var ideal:Number = 
-				1 + 
-				factors[TradeConstants.RES_TYPE_FOOD]*buyPrice(TradeConstants.RES_TYPE_FOOD) +
-				factors[TradeConstants.RES_TYPE_WOOD]*sellPrice(TradeConstants.RES_TYPE_WOOD) +
-				factors[TradeConstants.RES_TYPE_STONE]*buyPrice(TradeConstants.RES_TYPE_STONE) +
-				factors[TradeConstants.RES_TYPE_IRON]*buyPrice(TradeConstants.RES_TYPE_IRON);
-
-			// limit for resource buying
-			var limits:Array = (resourceLimits != null) ? resourceLimits : new Array(reserved.food * 1000, Math.max(resource.wood.max*2/3, 12000000), Math.max(resource.stone.max*2/3, 12000000), Math.max(resource.iron.max*2/3, 12000000));			
-			var randOrder:Array = Utils.randOrder(4);
-			
-			for (var ind:int = 0; ind < 4; ind++) {
-				var res:int = randOrder[ind];
-				var desired:Number = total / ideal * factors[res];
-				var goldDesired:Number = total / ideal;
-	
-				var batchSize:int = Utils.rand(limits[res] / 4, limits[res] / 2);
-				batchSize = Utils.roundAmount(batchSize, 2);
-							
-				if (estResource.gold < goldDesired + 500000000 && nResource[res] > Math.min(desired * 1.2, desired + 1000000) && nResource[res] > limits[res]) { // sale
-					var sellAmount:Number = Math.min(estResource.gold/sellPrice(res)*100, (nSellResource[res]-desired)*1.2, nCurrResource[res]*.9, sellAmount(res));
-					sellAmount = Utils.roundAmount(sellAmount);
-					// there is no constrain for selling!
-					// if (sellAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) continue;
-					if (sellAmount > batchSize) sellAmount = batchSize;
-					logDebugMsg(DEBUG_TRADING , "Trading: Do Sell ... ");
-					doSell(sellAmount, res, desperate);					
-					return;
-				} else if (nResource[res] < limits[res] && desired > Math.min(nResource[res] * 1.2, nResource[res] + 1000000) && estResource.gold > 1000) { // buy
-					var buyAmount:Number = Math.min((estResource.gold-goldDesired-reserved.gold)/buyPrice(res)*0.99, (desired-nResource[res])*1.2, buyAmount(res));
-					buyAmount = Utils.roundAmount(buyAmount);
-					if (buyAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) {
-						logDebugMsg(DEBUG_TRADING , "Trading: Skipping buy... " + resourceNames[ res ] + "  " + buyAmount );
-						continue;	
-					}
-					if (buyAmount > batchSize) buyAmount = batchSize;
-					logDebugMsg(DEBUG_TRADING , "Trading: Do Buy ... ");
-					doBuy(buyAmount, res, desperate);
-					return;
-				} 
-			}
-		}
-		
 		private function handleTrading() : void {
-			if (getConfig(CONFIG_TRADING) <= 0) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Trading Not Turned On " ); 
-				return 
-			};
-			if (tradingLimited) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Trading Limited " ); 
-				return 
-			};
-			if (!marketReady()) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Market not ready " );
-				return
-			};
-			
-			var desperate:Boolean = false;
-			if (getConfig(CONFIG_TRADING) >= 2) {
-				if (getConfig(CONFIG_BUILDING) > 0) {
-					var bCond:CityCondition = futureBuildingCondition();
-					if (bCond != null && !meetResourceConditionForUpgradingTo(bCond)) desperate = true;
-				}
-				if (getConfig(CONFIG_RESEARCH) > 0) {
-					var tCond:CityCondition = futureTechCondition();
-					if (tCond != null && !meetResourceConditionForUpgradingTo(tCond)) desperate = true;	
-				}
-	
-				if (tradesArray.length > 0 && (desperate || playerTimingAllowed("reprice", 300))) {
-					for (var i:int = 0; i < 4; i++) {
-						doBuy(0, i, desperate);
-						doSell(0, i, desperate);
-					}
-					var des:String = (desperate = true) ? "True" : "False"; 
-					logDebugMsg(DEBUG_TRADING , "Trading: Trading Desperate = " + des );
-					return;
-				}
-			}
-
-			var maxProduction:Number = Math.max(resource.food.increaseRate, resource.wood.increaseRate, resource.stone.increaseRate, resource.iron.increaseRate);
-			var reserved:ResourceBean = getReservedResource();
-			
-			var factors:Array = new Array(1, 2, 1, 1);
-			var nCurrResource:Array = new Array(estResource.food, estResource.wood, estResource.stone, estResource.iron);
-
-			// resource available, for selling, do not count those in transist
-			var nSellResource:Array = new Array(estResource.food-reserved.food, estResource.wood+resource.wood.increaseRate/4-reserved.wood, estResource.stone-reserved.stone, estResource.iron-reserved.iron);
-			var nResource:Array = new Array(estResource.food-reserved.food, estResource.wood+resource.wood.increaseRate/4-reserved.wood, estResource.stone-reserved.stone, estResource.iron-reserved.iron);
-			var goldAdjust:Number = 0;
-			
-			// adjust these numbers to take into account transacting and pending orders
-			for each (var transTrade:TransingTradeBean in transingTradesArray) {
-				nResource[transTrade.resType] += transTrade.amount;
-			}
-			
-			for each (var trade:TradeBean in tradesArray) {
-				if (trade.tradeType == TradeConstants.TRADE_TYPE_BUY) {
-					nResource[trade.resType] += (trade.amount-trade.dealedAmount);
-				} else if (trade.tradeType == TradeConstants.TRADE_TYPE_SELL) {
-					nResource[trade.resType] += (trade.amount-trade.dealedAmount);
-				}
-			}
-			
-			logDebugMsg(DEBUG_TRADING , "Trading: Current Gold " + estResource.gold + " - Reserved Gold: " + reserved.gold + " = " + (estResource.gold-reserved.gold) );			
-			var total:Number = 
-				(estResource.gold-reserved.gold) + 
-				nResource[TradeConstants.RES_TYPE_FOOD]*buyPrice(TradeConstants.RES_TYPE_FOOD) +
-				nResource[TradeConstants.RES_TYPE_WOOD]*sellPrice(TradeConstants.RES_TYPE_WOOD) +
-				nResource[TradeConstants.RES_TYPE_STONE]*buyPrice(TradeConstants.RES_TYPE_STONE) +
-				nResource[TradeConstants.RES_TYPE_IRON]*buyPrice(TradeConstants.RES_TYPE_IRON);
-				
-			if (total < 0 && nResource[TradeConstants.RES_TYPE_FOOD] > 0) {
-				logDebugMsg(DEBUG_TRADING , "Trading: Trading Not Desperate ");
-				return;
-			} 			// should wait for resource to go up
-			
-			//if (!cityTimingAllowed("trade", 60)) { 		
-				//logDebugMsg(DEBUG_TRADING , "Trading: Wait 30 sec ");
-				//return 
-			//};
-
-			var ideal:Number = 
-				1 + 
-				factors[TradeConstants.RES_TYPE_FOOD]*buyPrice(TradeConstants.RES_TYPE_FOOD) +
-				factors[TradeConstants.RES_TYPE_WOOD]*sellPrice(TradeConstants.RES_TYPE_WOOD) +
-				factors[TradeConstants.RES_TYPE_STONE]*buyPrice(TradeConstants.RES_TYPE_STONE) +
-				factors[TradeConstants.RES_TYPE_IRON]*buyPrice(TradeConstants.RES_TYPE_IRON);
-
-			// limit for resource buying
-			var limits:Array = (resourceLimits != null) ? resourceLimits : new Array(reserved.food * 1000, Math.max(resource.wood.max*2/3, 12000000), Math.max(resource.stone.max*2/3, 12000000), Math.max(resource.iron.max*2/3, 12000000));			
-			var randOrder:Array = Utils.randOrder(4);
-			
-			for (var ind:int = 0; ind < 4; ind++) {
-				var res:int = randOrder[ind];
-				var desired:Number = total / ideal * factors[res];
-				var goldDesired:Number = total / ideal;
-	
-				var batchSize:int = Utils.rand(limits[res] / 4, limits[res] / 2);
-				batchSize = Utils.roundAmount(batchSize, 2);
-							
-				if (nResource[res] < limits[res] && desired > Math.min(nResource[res] * 1.2, nResource[res] + 1000000) && estResource.gold > 1000) { // buy
-					var buyAmount:Number = Math.min((estResource.gold-goldDesired-reserved.gold)/buyPrice(res)*0.99, (desired-nResource[res])*1.2, buyAmount(res));
-					buyAmount = Utils.roundAmount(buyAmount);
-					if (buyAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) continue;
-					if (buyAmount > batchSize) buyAmount = batchSize;
-					doBuy(buyAmount, res, desperate);
-					logDebugMsg(DEBUG_TRADING , "Trading: Do Buy ... ");
-					return;
-				} else if (estResource.gold < goldDesired + 500000000 && nResource[res] > Math.min(desired * 1.2, desired + 1000000) && nResource[res] > limits[res]) { // sale
-					var sellAmount:Number = Math.min(estResource.gold/sellPrice(res)*100, (nSellResource[res]-desired)*1.2, nCurrResource[res]*.9, sellAmount(res));
-					sellAmount = Utils.roundAmount(sellAmount);
-					// there is no constrain for selling!
-					// if (sellAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) continue;
-					if (sellAmount > batchSize) sellAmount = batchSize;
-					doSell(sellAmount, res, desperate);
-					logDebugMsg(DEBUG_TRADING , "Trading: Do Sell ... ");
-					return;
-				}
-			}
-		}
-		
-		private function handleTradingOriginal() : void {
 			if (getConfig(CONFIG_TRADING) <= 0) return;
 			if (tradingLimited) return;
 			if (!marketReady()) return;
@@ -2542,14 +2233,7 @@ package autoevony.management
 				var batchSize:int = Utils.rand(limits[res] / 4, limits[res] / 2);
 				batchSize = Utils.roundAmount(batchSize, 2);
 							
-				if (nResource[res] < limits[res] && desired > Math.min(nResource[res] * 1.2, nResource[res] + 1000000) && estResource.gold > 1000) { // buy
-					var buyAmount:Number = Math.min((estResource.gold-goldDesired-reserved.gold)/buyPrice(res)*0.99, (desired-nResource[res])*1.2, buyAmount(res));
-					buyAmount = Utils.roundAmount(buyAmount);
-					if (buyAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) continue;
-					if (buyAmount > batchSize) buyAmount = batchSize;
-					doBuy(buyAmount, res, desperate);
-					return;
-				} else if (estResource.gold < goldDesired + 500000000 && nResource[res] > Math.min(desired * 1.2, desired + 1000000) && nResource[res] > limits[res]) { // sale
+				if (estResource.gold < goldDesired + 500000000 && nResource[res] > Math.min(desired * 1.2, desired + 1000000) && nResource[res] > limits[res]) { // sale
 					var sellAmount:Number = Math.min(estResource.gold/sellPrice(res)*100, (nSellResource[res]-desired)*1.2, nCurrResource[res]*.9, sellAmount(res));
 					sellAmount = Utils.roundAmount(sellAmount);
 					// there is no constrain for selling!
@@ -2557,10 +2241,17 @@ package autoevony.management
 					if (sellAmount > batchSize) sellAmount = batchSize;
 					doSell(sellAmount, res, desperate);
 					return;
+				} else if (nResource[res] < limits[res] && desired > Math.min(nResource[res] * 1.2, nResource[res] + 1000000) && estResource.gold > 1000) { // buy
+					var buyAmount:Number = Math.min((estResource.gold-goldDesired-reserved.gold)/buyPrice(res)*0.99, (desired-nResource[res])*1.2, buyAmount(res));
+					buyAmount = Utils.roundAmount(buyAmount);
+					if (buyAmount <= Math.max(0, nResource[res] / 10, maxProduction / 3)) continue;
+					if (buyAmount > batchSize) buyAmount = batchSize;
+					doBuy(buyAmount, res, desperate);
+					return;
 				}
 			}
 		}
-
+		
 		private function handleIdleUpdates() : void {						
 			if (cityTimingAllowed("refresh", 300)) {				
 				troopProductionUpdateNeeded = true;
