@@ -538,11 +538,12 @@
 						showHeaders="true" sortableColumns="false" visible="true" allowDragSelection="false" draggableColumns="false" enabled="true" 
 						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16">
 						<local:columns>
-							<mx:DataGridColumn headerText="Resource" dataField="col1" width="0.25"/>
-							<mx:DataGridColumn headerText="Amount" dataField="col2" width="0.25"/>
-							<mx:DataGridColumn headerText="Incoming" dataField="col5" width="0.25"/>
-							<mx:DataGridColumn headerText="Rate" dataField="col3" width="0.25" showDataTips="true"/>
-							<mx:DataGridColumn headerText="Days left" dataField="col4" width="0.35"/>
+							<mx:DataGridColumn headerText="Resource" dataField="col1" width="0.18"/>
+							<mx:DataGridColumn headerText="Amount" dataField="col2" width="0.18"/>
+							<mx:DataGridColumn headerText="Incoming" dataField="col5" width="0.14"/>
+							<mx:DataGridColumn headerText="Needed" dataField="col6" width="0.14"/>
+							<mx:DataGridColumn headerText="Rate" dataField="col3" width="0.16" showDataTips="true"/>
+							<mx:DataGridColumn headerText="Days left" dataField="col4" width="0.20"/>
 						</local:columns>
 					</local:RowColorDataGrid>
 				</mx:Canvas>
@@ -839,8 +840,10 @@
 						showHeaders="true" sortableColumns="true" visible="true" allowDragSelection="false" draggableColumns="false" enabled="true" 
 						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16">
 						<local:columns>
+							<mx:DataGridColumn headerText="Name" dataField="col6" width="0.26" showDataTips="true"/>
 							<mx:DataGridColumn headerText="Lord" dataField="col1" width="0.26" showDataTips="true"/>
 							<mx:DataGridColumn headerText="Alliance" dataField="col3" width="0.26" showDataTips="true"/>
+							<mx:DataGridColumn headerText="Lvl" dataField="col5" width="0.30" showDataTips="true"/>	
 							<mx:DataGridColumn headerText="Coords" dataField="col2" width="0.30" showDataTips="true"/>							
 							<mx:DataGridColumn headerText="Distance" dataField="col4" width="0.18" showDataTips="true"/>
 						</local:columns>
@@ -853,11 +856,13 @@
 						showHeaders="true" sortableColumns="true" visible="true" allowDragSelection="false" draggableColumns="false" enabled="true" 
 						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16" minColumnWidth="65">
 						<local:columns>
-							<mx:DataGridColumn headerText="Name" dataField="col1" width="170"/>
-							<mx:DataGridColumn headerText="Rank" dataField="col2" width="65" resizable="false"/>
-							<mx:DataGridColumn headerText="Prestige" dataField="col3" width="70" textAlign="right" resizable="false"/>
-							<mx:DataGridColumn headerText="Honor" dataField="col4" width="70" textAlign="right" resizable="false"/>							
-							<mx:DataGridColumn headerText="Last Login" dataField="col5" width="145" resizable="false"/>								
+							<mx:DataGridColumn headerText="Name" dataField="col1" width="120"/>
+							<mx:DataGridColumn headerText="Rank" dataField="col2" width="70" resizable="false"/>
+							<mx:DataGridColumn headerText="Prestige" dataField="col3" width="75" textAlign="right" resizable="false"/>
+							<mx:DataGridColumn headerText="Honor" dataField="col4" width="75" textAlign="right" resizable="false"/>							
+							<mx:DataGridColumn headerText="Last Login" dataField="col5" width="150" resizable="false"/>
+							<mx:DataGridColumn headerText="Castles" dataField="col6" width="50" resizable="false"/>			
+							<mx:DataGridColumn headerText="Population" dataField="col7" width="80" resizable="false"/>											
 						</local:columns>
 					</local:RowColorDataGrid>	
 				</mx:Canvas>                				

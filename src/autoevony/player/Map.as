@@ -341,12 +341,17 @@ package autoevony.player
 			return typeStr + " " + levelStr + "(" + x + "," + y + ")";
 		}
 		
+		public static function fieldIdToLevelString(fieldId:int) : String {
+			var level:int = getLevel(fieldId);
+			return level.toString();
+		}
+		
 		public static function fieldIdToCoordString(fieldId:int) : String {
 			var x:int = getX(fieldId);
 			var y:int = getY(fieldId);
 			return "(" + x + "," + y + ")";
 		}
-		
+
 		// search known castle by name or alliance
 		public static function searchCastles(str:String) : Array {
 			var result:Array = new Array();
@@ -408,6 +413,7 @@ package autoevony.player
 					//if (castle.npc) continue;
 					var x:int = getX(castle.id);
 					var y:int = getY(castle.id);
+					
 					if ((x-x1)*(x-x2) <= 0 && (y-y1)*(y-y2) <= 0) result[castle.id] = castle;
 				}
 			}

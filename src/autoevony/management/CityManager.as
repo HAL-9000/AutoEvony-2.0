@@ -70,6 +70,7 @@ package autoevony.management
 		private static var DEBUG_NPCATTACK:int = 11;
 		private static var DEBUG_WARREPORT:int = 12;
 		private static var DEBUG_BUILDNPC:int = 13;
+		private static var DEBUG_TRADING:int = 14;
 				
 		private static var GATE_AUTO:int = 0;
 		private static var GATE_OPEN:int = 1;
@@ -229,7 +230,8 @@ package autoevony.management
 		private var capNpcFirstWaveTroopBean:TroopBean = null;
 		private var capNpcLoyaltyWavesTroopBean:TroopBean = null;
 		private var capNpcList:Array = null;
-		public  var heroItems:Object = new Object();		
+		private	var resourcesNeeded:ResourceBean = new ResourceBean();
+		public  var heroItems:Object = new Object();
 		
 		public var ACADEMY_POSITION:int = 0; 
 		public var INN_POSITION:int = 0;	
@@ -1516,7 +1518,7 @@ package autoevony.management
 
 		private function getConditionBeanForUpgradingTo(cond:CityCondition) :ConditionBean {
 			var condBean:ConditionBean = null;
-			if (cond.isBuilding) {
+			if (cond.isBuilding) {				
 				if (cond.level == 1) {
 					var blBean:AvailableBuildingListBean;
 					for each (blBean in insideBuildingBeans) {
@@ -1684,7 +1686,7 @@ package autoevony.management
 
 		private function futureTechGoal() : ConditionBean {
 			var res:AvailableResearchListBean = getActiveResearch();
-			if (res != null && res.endTime - Utils.getServerTime() > 3*3600*1000) return null;
+			if (res != null && res.endTime - Utils.getServerTime() > 36*3600*1000) return null;
 			
 			var bestCondBean:ConditionBean = null;
 			var bestValue:int = 100000000;
@@ -1706,12 +1708,18 @@ package autoevony.management
 					bestCondBean = condBean;
 				}
 			}			
+			
 			return bestCondBean;
 		}
 
 		private function futureTechCondition() : CityCondition {
 			var res:AvailableResearchListBean = getActiveResearch();
-			if (res != null && res.endTime - Utils.getServerTime() > 3*3600*1000) return null;
+			if (res != null && res.endTime - Utils.getServerTime() > 36*3600*1000) {
+				if (cityTimingAllowed( "nextresearch", 300 )) {		
+					logDebugMsg(DEBUG_NORMAL, "Next Research Goal: More than 36 hours until current research finishes ");
+				} 
+				return null; 
+			}
 			var bestCond:CityCondition = null;
 			var bestValue:int = 100000000;
 			
@@ -1731,13 +1739,16 @@ package autoevony.management
 					bestValue = value;
 					bestCond = cond;
 				}
-			}			
+			}	
+			if (cityTimingAllowed( "nextresearch", 300 )) {				
+				logDebugMsg(DEBUG_NORMAL, "Next Research Goal: " + bestCond.name );
+			}
 			return bestCond;
 		}
 
 		private function futureBuildingGoal() : ConditionBean {
 			var building:BuildingBean = getActiveBuilding();
-			if (building != null && building.endTime - Utils.getServerTime() > 3*3600*1000) return null;
+			if (building != null && building.endTime - Utils.getServerTime() > 36*3600*1000) return null;
 			var bestCondBean:ConditionBean = null;
 			var bestValue:int = 100000000;
 			
@@ -1768,9 +1779,10 @@ package autoevony.management
 		
 		private function futureBuildingCondition() : CityCondition {
 			var building:BuildingBean = getActiveBuilding();
-			if (building != null && building.endTime - Utils.getServerTime() > 3*3600*1000) return null;
+			if (building != null && building.endTime - Utils.getServerTime() > 36*3600*1000) return null;
 			
 			var bestCond:CityCondition = null;
+			var bestCondBean:ConditionBean = null;
 			var bestValue:int = 100000000;
 			
 			for (var i:int = currRequirements.length - 1; i >= 0; i--) {
@@ -1790,6 +1802,7 @@ package autoevony.management
 				if (value < bestValue) {
 					bestValue = value;
 					bestCond = cond;
+					bestCondBean = condBean;
 				}
 			}			
 			return bestCond;
@@ -7847,8 +7860,44 @@ package autoevony.management
     		var resfood:int = 0;
     		var reslumber:int = 0;
     		var resstone:int = 0;
-    		var resiron:int = 0;
+    		var resiron:int = 0;    		    		
+			var resourcesNeeded:ResourceBean = new ResourceBean();
+
+			
+			if (getConfig(CONFIG_BUILDING) > 0) {
+				var bCond:CityCondition = futureBuildingCondition();
+				if (bCond != null) {
+					var bCondBean:ConditionBean = getConditionBeanForUpgradingTo(bCond);
+					if (bCondBean != null) {
+						resourcesNeeded.gold  += bCondBean.gold;
+						resourcesNeeded.food  += bCondBean.food;
+						resourcesNeeded.wood  += bCondBean.wood;
+						resourcesNeeded.iron  += bCondBean.iron;
+						resourcesNeeded.stone += bCondBean.stone;		
+						if (cityTimingAllowed( "nextbuild", 180 )) {			
+							logDebugMsg(DEBUG_TRADING, "Next Building Goal (URD) : " + bCond.name ); 						
+						}
+					}
+				}	
+			}    		
     		
+			if (getConfig(CONFIG_RESEARCH) > 0) {
+				var tCond:CityCondition = futureTechCondition();				
+				if ( tCond != null ) {
+					var tCondBean:ConditionBean = getConditionBeanForUpgradingTo(tCond);
+					if (tCondBean != null) {
+						resourcesNeeded.gold  += tCondBean.gold;
+						resourcesNeeded.food  += tCondBean.food;
+						resourcesNeeded.wood  += tCondBean.wood;
+						resourcesNeeded.iron  += tCondBean.iron;
+						resourcesNeeded.stone += tCondBean.stone;					
+						if (cityTimingAllowed( "nextresearch", 180 )) {			
+							logDebugMsg(DEBUG_TRADING, "Next Research Goal (URD) : " + tCond.name ); 						
+						}
+					}
+				}	
+			}					
+
 			for each(var army:ArmyBean in friendlyArmies) {
 				if ( army.direction != ArmyConstants.ARMY_STAY ) {				
 					//logMessage("ALLIANCE INCOMING: ");
@@ -7889,6 +7938,7 @@ package autoevony.management
     		obj.col5 = Utils.formatNum( resgold ); 
     		obj.col2 = Utils.formatNum(resource.gold); 
     		obj.col3 = Utils.formatNum(resource.taxIncome - resource.herosSalary);
+    		obj.col6 = Utils.formatNum(resourcesNeeded.gold);
     		obj.label = "Tax collected: " + Utils.formatNum(resource.taxIncome) + 
     					"\nHero salary: " + Utils.formatNum(resource.herosSalary) +
     					"\nNet: " + Utils.formatNum(resource.taxIncome - resource.herosSalary);
@@ -7910,6 +7960,7 @@ package autoevony.management
 			}
 			obj.col5 = Utils.formatNum( shipped + resfood );
 			shipped = 0;
+			obj.col6 = Utils.formatNum(resourcesNeeded.food);
     		obj.col1 = "Food"; obj.col2 = Utils.formatNum(resource.food.amount); 
     		obj.col3 = Utils.formatNum(resource.food.increaseRate - resource.troopCostFood);
     		obj.label = "Rate: " + Utils.formatNum(resource.food.increaseRate) + 
@@ -7935,6 +7986,7 @@ package autoevony.management
 			}
 			obj.col5 = Utils.formatNum( shipped + reslumber);
 			shipped = 0;
+			obj.col6 = Utils.formatNum(resourcesNeeded.wood);
 			obj.col1 = "Lumber"; obj.col2 = Utils.formatNum(resource.wood.amount); 
     		obj.col3 = Utils.formatNum(resource.wood.increaseRate);
     		obj.col4 = "";
@@ -7952,6 +8004,7 @@ package autoevony.management
 			}
 			obj.col5 = Utils.formatNum( shipped + resstone);
 			shipped = 0;
+			obj.col6 = Utils.formatNum(resourcesNeeded.stone);
 			obj.col1 = "Stone"; obj.col2 = Utils.formatNum(resource.stone.amount); 
     		obj.col3 = Utils.formatNum(resource.stone.increaseRate);
     		obj.col4 = "";
@@ -7969,6 +8022,7 @@ package autoevony.management
 			}
 			obj.col5 = Utils.formatNum( shipped + resiron );
 			shipped = 0;
+			obj.col6 = Utils.formatNum(resourcesNeeded.iron);
     		obj.col1 = "Iron"; obj.col2 = Utils.formatNum(resource.iron.amount); 
     		obj.col3 = Utils.formatNum(resource.iron.increaseRate);
     		obj.col4 = "";
@@ -8278,8 +8332,11 @@ package autoevony.management
     			obj = new DataRow();
     			
     			obj.col1 = cas.userName;
-    			obj.col2 = Map.fieldIdToString(cas.id);
+    			obj.col6 = cas.name;
+    			obj.col2 = Map.fieldIdToCoordString(cas.id);
+    			obj.col5 = Map.fieldIdToLevelString(cas.id);
     			obj.col3 = cas.allianceName;
+    			
     			obj.col4 = (int(Map.fieldDistance(cas.id, castle.fieldId)*100)/100);
     			
     			if (cas.relation == AllianceConstants.ENEMY_ALLIANCE) {
@@ -8405,9 +8462,22 @@ package autoevony.management
     			obj = new DataRow();
     			obj.col1 = player.userName;
     			obj.col2 = player.allianceLevel;
+    			if ( player.allianceLevel == "Host" ) {
+    				obj.bgColor = 0xFBFB83;
+    			} else if ( player.allianceLevel == "Vice Host" ) {
+    				obj.bgColor = 0xC9FFC4;
+    			} else if ( player.allianceLevel == "Presbyter" ) {
+    				obj.bgColor = 0xC4E1FF;
+    			} else if ( player.allianceLevel == "Officer" ) {
+    				obj.bgColor = 0xF5C4FF;
+    			} else {
+    				obj.bgColor = 0xEEEEEE;
+    			}
     			obj.col3 = player.prestige;
-    			obj.col4 = player.honor;
+    			obj.col4 = player.honor;    			
     			obj.col5 = Utils.getSortableDateString(player.lastLoginTime);
+    			obj.col6 = player.castleCount;
+    			obj.col7 = player.population;
 	    		data.addItem(obj);
         	}
         	DataRow.copyRowArray(data, arr);

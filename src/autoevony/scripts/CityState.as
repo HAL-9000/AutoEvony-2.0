@@ -89,6 +89,7 @@ package autoevony.scripts
 		private var selfArmies:ArrayCollection = new ArrayCollection();
 
 		public var verboseLogs:Boolean = false;
+		public var RALLYID:int = 0;
 		private var pleaseStop:Boolean = false;
 
 		public function CityState(castle:CastleBean, player:PlayerBean, init:Boolean = true)
@@ -1977,7 +1978,7 @@ package autoevony.scripts
 		 * Verifies that the level of the rally point is high
 		 * enough to support the number of marching armies.
 		 */
-		private function checkRallyPoint() : Boolean
+		private function checkRallyPoint() : int
 		{
 			var marchCount:int = selfArmies.length;
 			for each (var building:BuildingBean in castle.buildingsArray)
@@ -1986,14 +1987,14 @@ package autoevony.scripts
 				{
 					if (building.level > marchCount)
 					{
-						return true;
+						return building.positionId;
 					}
 
 					break;
 				}
 			}
 
-			return false;
+			return 9999;
 		}
 
 		private function checkTroopLevels(newArmytroops:TroopBean) : Boolean
@@ -2741,6 +2742,7 @@ package autoevony.scripts
 		private function sendTroops(coords:String, troops:String, marchType:int, hero:String = "", resources:ResourceBean = null, restTime:String = "") : void
 		{
 			var armyReady:Boolean = false;
+			var armyReady1:int = 0;
 			var targetId:int = Map.coordStringToFieldId(coords);
 			var selectedHero:HeroBean = null;
 			var troopObj:TroopBean;
@@ -2772,11 +2774,14 @@ package autoevony.scripts
 					return;
 				}
 
-				armyReady = checkRallyPoint();
-
+				armyReady1 = checkRallyPoint();
+				RALLYID = armyReady1;				
+				if ( armyReady1 != 9999 ) {
+					armyReady = true;
+				} 
 				try
 				{
-					if (armyReady)
+					if (armyReady != 9999)
 					{
 						if (hero.length == 0 || hero.toLowerCase() == "none")
 						{
@@ -2865,6 +2870,7 @@ package autoevony.scripts
 					setCommandResponse(ResponseDispatcher.ARMY_NEW_ARMY, handleCommandResponse);
 
 					onCommandResult(currentAction,  "- starting march to " + coords + " arrival at " + arrivalTime.toLocaleTimeString() + (selectedHero == null ? "" : " with " + selectedHero.name + " and") + " with " + troopsToString(troopObj) + " in " + Utils.formatTime(travelTime+newArmy.restTime));
+					ActionFactory.getInstance().getCastleCommands().checkOutUpgrade(castle.id, RALLYID);					
 					ActionFactory.getInstance().getArmyCommands().newArmy(castle.id, newArmy);
 				}
 			});
