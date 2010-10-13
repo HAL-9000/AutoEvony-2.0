@@ -158,7 +158,7 @@
 				var buffcount:int = 0;
 				while ( buffcount < buffs.length) {
 					buff = buffs[ buffcount ]
-					appendToTextArea(logs, "Buffs: " + buff.descName + " " + buff.endTime + " " + buff.typeId );					
+					appendToTextArea(logs, "Buffs: " + buff.descName + " expires in " + remainTime(buff.endTime));					
 					buffcount ++;
 				}
 	        	var date:Date = new Date();
@@ -181,6 +181,11 @@
 	        	// handleCommand("listmail");
 	        }
 	        
+	     	private function remainTime(end:Number) : String {
+				var curr:Number = Utils.getServerTime();
+				if (end < curr) return "0m:00";
+				return Utils.formatTime((end-curr) / 1000);
+			}
             public function onDisconnect(resp:ConnectionLost) : void
             {
                 var message:String = "Disconnected - ";

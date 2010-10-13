@@ -1209,7 +1209,7 @@ package autoevony.management
 			}
 
 			if (response.ok != 1) {
-				logError("checkout upgrade error: " + response.errorMsg);
+				logDebugMsg( 1 , "checkout upgrade error: " + response.errorMsg);
 				return;
 			}
 			
