@@ -11,7 +11,7 @@ package autoevony.scripts
 	import com.umge.sovt.common.beans.AvailableResearchListBean;
 	import com.umge.sovt.common.beans.BuildingBean;
 	import com.umge.sovt.common.beans.CastleBean;
-	import com.umge.sovt.common.constants.ErrorCode;
+	import com.umge.sovt.common.constants.*;
 	import com.umge.sovt.common.module.CommandResponse;
 	import com.umge.sovt.common.module.tech.ResearchResponse;
 	import com.umge.sovt.common.server.events.BuildComplate;
@@ -46,8 +46,7 @@ package autoevony.scripts
 
 		public function Script(city:CityState)
 		{
-			this.m_city = city;
-
+			this.m_city = city;			
 			m_scriptTimeOut.addEventListener(TimerEvent.TIMER_COMPLETE, scriptTimeOut_Complete);
 			m_scriptTimer.addEventListener(TimerEvent.TIMER, runScript);
 
@@ -440,41 +439,23 @@ package autoevony.scripts
 					break;
 				case ErrorCode.TOWNHALL_LEVEL_UNSUPPORT:
 				case ErrorCode.INVALID_BUILDING_STATUS:
-
-				// todo fix retry, disabling for now
-				/*
-					var b:BuildingBean = city.currentActiveBuilding();
-
-					if (b == null)
-					{
+					var b:BuildingBean = m_city.currentActiveBuilding();
+					if (b == null) {
 						logMessage("A building is currently building, but unable to find active building");
 						handled = true;
 						complete = true;
 						break;
 					}
-
 					var finishTime:Date = new Date(b.endTime);
-
 					logMessage(b.name + " is still building. Waiting until " + finishTime.toLocaleString());
-
-					// try resetting the building status for retry
-					for each (var building:BuildingBean in city.castle.buildingsArray)
-					{
-						if (building.status != BuildingConstants.STATUS_NORMAL)
-						{
+					for each (var building:BuildingBean in m_city.castle.buildingsArray) {
+						if (building.status != BuildingConstants.STATUS_NORMAL) {
 							building.status = BuildingConstants.STATUS_NORMAL;
 						}
 					}
-
-					//runAgain = true;
 					handled = true;
 					complete = false;
-					waitTime = finishTime.getTime() - new Date().getTime();
-				*/
-					// temp code:
-					logMessage("A building is still building.  Skipping.  See issue 235 on project page");
-					handled = true;
-					complete = true;
+					waitTime = finishTime.getTime() - new Date().getTime();				
 					break;
 				case ErrorCode.ALREADY_UPGRADING_RESEARCH_IN_ACADEMY:
 					//todo make research able to retry.

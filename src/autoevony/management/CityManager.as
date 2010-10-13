@@ -63,6 +63,7 @@ package autoevony.management
 		private static var CONFIG_FASTHERO:String = "fasthero";
 		private static var CONFIG_ABANDON:String = "abandon";
 		private static var CONFIG_WARREPORT:String = "warreport";
+		private static var CONFIG_WARRULES:String = "warrules";
 		private static var CONFIG_ATTACKWARNING:String = "attackwarning";
 		
 		private static var DEBUG_NORMAL:int = 1;
@@ -71,6 +72,8 @@ package autoevony.management
 		private static var DEBUG_WARREPORT:int = 12;
 		private static var DEBUG_BUILDNPC:int = 13;
 		private static var DEBUG_TRADING:int = 14;
+		private static var DEBUG_BUILDING:int = 15;
+		private static var DEBUG_TROOP:int = 16;
 				
 		private static var GATE_AUTO:int = 0;
 		private static var GATE_OPEN:int = 1;
@@ -168,6 +171,7 @@ package autoevony.management
 		private var innHeroes:ArrayCollection = null;
 
 		private static var allianceData:ArrayCollection = new ArrayCollection();
+		private static var resourceData:ArrayCollection = new ArrayCollection();
 		
 		// list of places to be npc'ed, and the town being built, evacuation destination
 		private static var npcLocations:Array = new Array();
@@ -239,9 +243,12 @@ package autoevony.management
 		public var TOWNHALL_POSITION:int = 0;
 		public var RALLY_POSITION:int = 0;
 		public var EMBASSY_POSITION:int = 0;
+		public var EMBASSY_LEVEL:int = 0;
 		public var WALL_POSITION:int = 0;
 		public var BARRACK_POSITION:int = 0;
 		public var MARKET_POSITION:int = 0;
+		
+		public var INCOMING_ATTACKS:Boolean = false; 
 		
 		private function errorCaught(errorMsg:String) : void {
 			logMessage("Error: " + errorMsg,"#ff0000");
@@ -272,6 +279,7 @@ package autoevony.management
 					break;
 				}
 			}
+			
 			return castle == first;
 		}
 		
@@ -285,7 +293,7 @@ package autoevony.management
 
 			while (market.length < 4) market.addItem(null);
 			
-			timer = new Timer(5000);
+			timer = new Timer(10000);
 			timer.addEventListener(TimerEvent.TIMER, onTimer);
 			timer.start();
 			
@@ -499,6 +507,8 @@ package autoevony.management
 						RALLY_POSITION = building.positionId;
 					} else if ( building.typeId == BuildingConstants.TYPE_EMBASSY ) { 
 						EMBASSY_POSITION = building.positionId;
+						EMBASSY_LEVEL = building.level;
+						
 					} else if ( building.typeId == BuildingConstants.TYPE_MARKET ) { 
 						MARKET_POSITION = building.positionId;
 					} else if ( building.typeId == BuildingConstants.TYPE_WALL ) { 
@@ -581,7 +591,7 @@ package autoevony.management
 				CONFIG_NPC, CONFIG_NPCLIMIT, CONFIG_COMFORT, CONFIG_RESEARCH, CONFIG_BUILDING, CONFIG_TRADING,
 				CONFIG_FORTIFICATION, CONFIG_TROOP, CONFIG_HERO, CONFIG_HUNTING, CONFIG_HIDING,  
 				CONFIG_BUILDNPC, CONFIG_DEBUG, CONFIG_VALLEY, CONFIG_DUMPING, CONFIG_TRAINING, CONFIG_FASTHERO,
-				CONFIG_ABANDON, CONFIG_GATE, CONFIG_WARREPORT, CONFIG_ATTACKWARNING, CONFIG_NPC);
+				CONFIG_ABANDON, CONFIG_GATE, CONFIG_WARREPORT, CONFIG_WARRULES, CONFIG_ATTACKWARNING, CONFIG_NPC);
 			if (str == null) {
 				logError("Empty config, available: " + configNames.join(" "));
 				return false;
@@ -630,6 +640,11 @@ package autoevony.management
 				configs[CONFIG_FASTHERO] = 0;
 			}
 			
+			if (getConfig(CONFIG_WARRULES) > 0 ) {
+				logMessage("Using War Rules");
+				configs[CONFIG_WARRULES] = 1;
+			}
+
 			if (getConfig(CONFIG_WARREPORT) > 0 && !isMainTown()) {
 				logMessage("WARNING: warreport works only on the first town " + player.castlesArray[0].name + ", option disabled");
 				configs[CONFIG_WARREPORT] = 0;
@@ -1284,10 +1299,20 @@ package autoevony.management
 			var cond:CityCondition;
 			var condBean:ConditionBean;
 			var resName:String;
-			
-			var active:BuildingBean = getActiveBuilding();
-			if (active != null) return;
-			
+			var dirName:String;						
+			var active:BuildingBean = getActiveBuilding();					
+			if (active != null) {
+				if ( active.status ==  BuildingConstants.STATUS_UPGRADING ) {
+					dirName = "build";
+				} else {
+					dirName = "demo";
+				}
+				logDebugMsg(DEBUG_BUILDING , "Handle Building: " + active.name + " (" + ( active.level + 1 ) + ") is still " + dirName + "ing, estimated finish in " + remainTime(active.endTime));
+				return;
+			} else {
+				logDebugMsg(DEBUG_BUILDING , "Nothing is currently being built or demolished");
+			}
+			// find the next building goal
 			cond = nextBuildingCondition();
 			if (cond == null) return;		// no building possible
 			condBean = getConditionBeanForUpgradingTo(cond);
@@ -1307,16 +1332,16 @@ package autoevony.management
 			} else if (cond.level == 1) { 			// create new building
 				posId = selectEmptyPosition(cond.typeId);
 				if (posId == -1000) {
-					// logMessage("no space to build building, remove building condition " + cond.toString());
+					logMessage("no space left to build new building, remove building condition " + cond.toString());
 					if (currRequirements.getItemIndex(cond) != -1) currRequirements.removeItemAt(currRequirements.getItemIndex(cond));
 					handleBuilding();
 					return;
 				}
 				logMessage("build new building " + BuildingType.toString(cond.typeId) + " at location " + posId);
 				if ( BuildingType.isOutsideBuilding(cond.typeId) == true ) {
-					ActionFactory.getInstance().getCastleCommands().getAvailableBuildingListInside(castle.id);
-				} else {
 					ActionFactory.getInstance().getCastleCommands().getAvailableBuildingListOutside(castle.id);
+				} else {
+					ActionFactory.getInstance().getCastleCommands().getAvailableBuildingListInside(castle.id);					
 				}				
 				ActionFactory.getInstance().getCastleCommands().newBuilding(castle.id, posId, cond.typeId);				 
 				for each(resName in resourceIntNames) estResource[resName] -= condBean[resName];
@@ -1349,7 +1374,10 @@ package autoevony.management
 			if (countBuilding(BuildingConstants.TYPE_ACADEMY, 1) == 0) return;
 			var res:AvailableResearchListBean = getActiveResearch();
 			
-			if (res != null) return;
+			if (res != null) { 
+				logDebugMsg(DEBUG_BUILDING ,"Handle Research: " + TechType.toString(res.typeId) + " (" + res.level + ") Is still building, estimated finish in " + remainTime(res.endTime) );			
+				return; 
+			}
 
 			cond = nextTechCondition();
 			if (cond == null) return;		// no tech possible
@@ -1378,6 +1406,7 @@ package autoevony.management
 			}
 			return 0;
 		}
+
 		private function selectEmptyPosition(typeId:int) : int {
 			var loc:int;
 			if (typeId == BuildingConstants.TYPE_WALL) return BuildingConstants.POSITION_WALL;
@@ -1655,7 +1684,10 @@ package autoevony.management
 		private function nextBuildingCondition() : CityCondition {
 			for (var i:int = currRequirements.length - 1; i >= 0; i--) {
 				var cond:CityCondition = currRequirements[i];
-				if (!cond.isBuilding) continue;
+				if (!cond.isBuilding) {
+					logDebugMsg(DEBUG_BUILDING , "Handle Building: " + cond.name + " ( " + cond.level + " ) is active");
+					continue;
+				}
 				if (meetCondition(cond)) {
 					currRequirements.removeItemAt(i);
 					continue;	
@@ -2274,7 +2306,7 @@ package autoevony.management
 				innUpdateNeeded = true;
 				if (isMainTown()) allianceUpdateNeeded = true;
 			}
-
+			
 			if (troopProductionUpdateNeeded) {
 				ActionFactory.getInstance().getCastleCommands().checkOutUpgrade(castle.id, BARRACK_POSITION);
 				ActionFactory.getInstance().getTroopCommands().getProduceQueue(castle.id);
@@ -2349,7 +2381,8 @@ package autoevony.management
 			
 			// update market prices regardless of whether trading or not
 			// this is required for npclimit option, for example
-			updateMarketPrices();
+			updateMarketPrices();			
+			//updateResourceData( resourceData );
 			
 			troopProductionUpdateNeeded = false;
 			fortificationProductionUpdateNeeded = false;
@@ -3105,12 +3138,9 @@ package autoevony.management
 			if (response.ok != 1) {
 				logError("resource update response: " + response.msg);
 				return;
-			}
-			
+			}			
 			if (response.castleId != castle.id) return;
-			resource = response.resource;
-			// logError("resource update response: GOLD = " + response.resource.gold );
-			// do not set estResource
+			resource = response.resource;			
 		}
 
 
@@ -3606,19 +3636,25 @@ package autoevony.management
 			var reservedBarrack:BuildingBean = getReservedBarrack();
 
 			var freeSpots:int = 0;
+			var totalSpots:int = 0;
 			for (var i:int = 0; i < buildings.length; i++) {
 				var building:BuildingBean = buildings[i];
 				if (building.typeId != BuildingConstants.TYPE_BARRACK) continue;
 				var barrackBean:AllProduceBean = getTroopQueueForBuilding(building);
-				if (barrackBean == null) continue;
 				var maxQueueSize:int = building.level;
+				totalSpots += maxQueueSize;				
+				if (barrackBean == null) {
+					logDebugMsg(DEBUG_TROOP, "No Barrack Bean ... Skipping! ");
+					continue;	
+				}				
 				// assume queue starts at 2 for "dumping troop" call
 				var curQueueSize:int = (maxInQueue == 2) ? barrackBean.allProduceQueueArray.length : Math.max(2, barrackBean.allProduceQueueArray.length);
 				if (Math.min(maxQueueSize, maxInQueue) <= curQueueSize) continue;
-				logDebugMsg(DEBUG_POPULATION, "Estimate: build troop on barrack at " + barrackBean.positionId + " from pos " + curQueueSize + " to " + Math.min(maxQueueSize, maxInQueue));
+				logDebugMsg(DEBUG_TROOP, "Estimate: build troop on barrack at " + barrackBean.positionId + " from pos " + curQueueSize + " to " + Math.min(maxQueueSize, maxInQueue));
 				freeSpots += (Math.min(maxQueueSize, maxInQueue) - curQueueSize);
+				
 			}
-
+			logDebugMsg(DEBUG_TROOP, "Barrack Spots availible for troop production " + freeSpots + " out of " + totalSpots );
 			total = Math.min(freeSpots * targetTime / troopTime, 
 				estResource.gold / (conditionBean.gold+1),
 				estResource.food / (conditionBean.food+1),
@@ -3638,15 +3674,24 @@ package autoevony.management
 			var resName:String;
 			var batch:int;
 			
-			if (researches == null) return false; 	// town not ready yet
-			if (troopProduceQueue == null) return false;
-			if (troopRequirement == null) return false;
+			if (researches == null) {
+				logDebugMsg(DEBUG_TROOP , "No research found ... Town not ready!");
+				return false; 	// town not ready yet
+			}
+			if (troopProduceQueue == null) { 
+				logDebugMsg(DEBUG_TROOP, "Troop Produce Queue is null...");
+				return false;
+			}
+			if (troopRequirement == null) { 
+				logDebugMsg(DEBUG_TROOP, "No Troop Requirements...");
+				return false;
+			}
 
 			var resAvail:Boolean = resourceAvailableForTroop();
 			var ballistaAvail:Boolean = resourceAvailableForBallista();
 			
 			if (!canProduceBallista() && !resAvail) {
-				logDebugMsg(DEBUG_NORMAL, "Not enough resource for troop production");
+				logDebugMsg(DEBUG_TROOP, "Not enough resource for troop production");
 				return false;
 			}
 			
@@ -3702,8 +3747,11 @@ package autoevony.management
 			}
 
 			var estPopNeeded:int = estimatePopulationNeededForTraining(2, 1800);
-			if (estPopNeeded == 0) return false;
-			logDebugMsg(DEBUG_POPULATION, "est population: " + estResource.curPopulation + ", est worker: " + estResource.workPeople);
+			if (estPopNeeded == 0) { 
+				logDebugMsg(DEBUG_TROOP , "No troops queued ...");
+				return false;
+			}
+			logDebugMsg(DEBUG_TROOP, "est population: " + estResource.curPopulation + ", est worker: " + estResource.workPeople);
 
 			var hero:HeroBean = bestIdleAttackHero();
 			var trainLevel:int = getTechLevel(TechConstants.TRAIN_SKILL);
@@ -3801,7 +3849,7 @@ package autoevony.management
 					return true;
 				}
 			}
-			
+			logDebugMsg(DEBUG_TROOP , "Nothing Happened...");
 			return false;
 		}
 
@@ -6006,10 +6054,16 @@ package autoevony.management
 
 		private function attackArmyToString(army:ArmyBean) : String {
 			var str:String = "";
-			if (army.alliance != null) str += " alliance:" + army.alliance;
-			if (army.king != null) str += " lord:" + army.king;
+			if (army.alliance != null) { 
+				str += " alliance:" + army.alliance; 
+			} else {
+				str += " alliance: null "; 
+			}
+			if (army.king != null) str += " lord:" + army.king;			
 			if (army.startPosName != null) str += " from:" + army.startPosName;
 			if (army.startFieldId != -1) str += "(" + Map.getX(army.startFieldId) + "," + Map.getY(army.startFieldId) + ")";
+			if (army.targetPosName != null) str += " attacking:" + army.targetPosName ;
+			if (army.targetFieldId != -1) str += "(" + Map.getX(army.targetFieldId ) + "," + Map.getY(army.targetFieldId ) + ")";
 			if (army.troop != null) str += " troop:" + troopStrBeanToString(army.troop);
 			if (army.reachTime != -1) str += " in " + remainTime(army.reachTime) + " @ " + new Date(army.reachTime).toLocaleTimeString();
 			return str;
@@ -6018,7 +6072,7 @@ package autoevony.management
 		public static function isJunkTroop(tr:TroopStrBean) : Boolean {
 			for each (var typeId:int in troopTypes) {
 				if (!Utils.isNumeric(tr[ troopIntNames[typeId] ])) return false;
-				if (int(tr[ troopIntNames[typeId] ]) > 500) return false; 
+				if (int(tr[ troopIntNames[typeId] ]) > 100) return false; 
 			}
 
 			return true;
@@ -6132,14 +6186,23 @@ package autoevony.management
 			
 		private function handleEnemyArmies() : void {
 			var i:int;
+			var ii:int;
 			var a:ArmyBean;
+			var attackmessage:Array = new Array();
 			if (getConfig(CONFIG_GATE) > 0) {
 				handleGateControl();
 			}
 
 			if (getConfig(CONFIG_HIDING) > 0) handleHiding();
-
-			if (enemyArmies.length > 0) {
+			if (enemyArmies.length < 1) {
+				if ( INCOMING_ATTACKS == true) {
+					INCOMING_ATTACKS = false;
+					if (getConfig(CONFIG_WARRULES) > 0) {
+						ActionFactory.getInstance().getCommonCommands().allianceChat( "No Incoming Attacks " , 0);
+					}	
+				}				
+			} else {
+				INCOMING_ATTACKS = true;
 				var ind:int = -1;
 				for (i = 0; i < enemyArmies.length; i++) {
 					a = enemyArmies[i];
@@ -6150,12 +6213,20 @@ package autoevony.management
 
 				var interval:int = (ind == -1 || enemyArmies[ind].reachTime > Utils.getServerTime() + 3600*1000) ? 600 : 60;
 				if (cityTimingAllowed("attack", interval)) {
-					if (cityTimingAllowed("allattacks", 300)) {
+					if (cityTimingAllowed("allattacks", 60)) {
 						logMessage("ATTACK by: " + attackArmyToString(enemyArmies[0]) + ", " + enemyArmies.length + " waves" , "#ff0000");
+						attackmessage.push("I'm being attacked by: " + attackArmyToString(enemyArmies[0]) + ", " + enemyArmies.length + " waves");
 						for (i = 1; i < enemyArmies.length; i++) {
 							a = enemyArmies[i];
 							if (isJunkTroop(a.troop)) continue;
-							logMessage("Attack: [" + (i+1) + "] " + attackArmyToString(a));
+							logMessage("Attack: [" + (i+1) + "] " + attackArmyToString(a), "#ff0000");
+							attackmessage.push("Next wave: [" + (i+1) + "] " + attackArmyToString(a));
+						}												
+						attackmessage.push("My Embassy is Lvl: " + EMBASSY_LEVEL + " with " + friendlyArmies.length + " slots filled" );
+						if (getConfig(CONFIG_WARRULES) > 0) {
+							for (ii = 0; ii <= attackmessage.length; ii++) {
+								ActionFactory.getInstance().getCommonCommands().allianceChat( attackmessage[ii] , 0);
+							}
 						}
 					} else {
 						if (ind == -1) ind = 0;
@@ -7900,37 +7971,36 @@ package autoevony.management
 
 			for each(var army:ArmyBean in friendlyArmies) {
 				if ( army.direction != ArmyConstants.ARMY_STAY ) {				
-					//logMessage("ALLIANCE INCOMING: ");
-					//logMessage("GOLD : " + army.resource.gold );
-					//logMessage("FOOD : " + army.resource.food );
-					//logMessage("WOOD : " + army.resource.wood );
-					//logMessage("STONE: " + army.resource.stone);
-					//logMessage("IRON : " + army.resource.iron );
-					
 						resgold += int( army.resource.gold );
 						resfood += int( army.resource.food );
 						reslumber += int( army.resource.wood );
 						resstone += int( army.resource.stone );
 						resiron += int( army.resource.iron );
 				}
-			}
-    		
-			for each(var army1:ArmyBean in selfArmies ) {
-				if ( army1.direction == ArmyConstants.ARMY_BACKWARD ) {						
-						//logMessage("SELF INCOMING: ");
-						//logMessage("GOLD : " + army1.resource.gold );
-						//logMessage("FOOD : " + army1.resource.food );
-						//logMessage("WOOD : " + army1.resource.wood );
-						//logMessage("STONE: " + army1.resource.stone);
-						//logMessage("IRON : " + army1.resource.iron );
-					
+			}			
+    		if ( selfArmies.length > 0 ) { 
+			  for each(var army1:ArmyBean in selfArmies ) {				  				
+				if ( army1.direction == ArmyConstants.ARMY_BACKWARD ) {
+					if ( army1.startFieldId != castle.fieldId ) continue;									
+												
+					if ( army1.resource.gold > 0 ) {
 						resgold += int( army1.resource.gold );
+					}						
+					if ( army1.resource.food > 0 ) {
 						resfood += int( army1.resource.food );
-						reslumber += int( army1.resource.wood );
+					}
+					if ( army1.resource.wood > 0 ) {
+							reslumber += int( army1.resource.wood );
+					}
+					if ( army1.resource.stone > 0 ) {
 						resstone += int( army1.resource.stone );
+					}
+					if ( army1.resource.iron> 0 ) {
 						resiron += int( army1.resource.iron );
+					}
 				}
-			}
+			  }
+    		}
 
 
     		obj = new DataRow();    		 
@@ -7993,7 +8063,6 @@ package autoevony.management
     		obj.label = "Max storage: " + resource.wood.max + 
     			"\nAsk: " + buyAmount(TradeConstants.RES_TYPE_WOOD) + "@" + buyPrice(TradeConstants.RES_TYPE_WOOD) +
     			"\nBid: " + sellAmount(TradeConstants.RES_TYPE_WOOD) + "@" + sellPrice(TradeConstants.RES_TYPE_WOOD);
-
     		data.addItem(obj);
 
     		obj = new DataRow();
@@ -8011,7 +8080,6 @@ package autoevony.management
     		obj.label = "Max storage: " + resource.stone.max + 
     			"\nAsk: " + buyAmount(TradeConstants.RES_TYPE_STONE) + "@" + buyPrice(TradeConstants.RES_TYPE_STONE) +
     			"\nBid: " + sellAmount(TradeConstants.RES_TYPE_STONE) + "@" + sellPrice(TradeConstants.RES_TYPE_STONE);
-
     		data.addItem(obj);
 
     		obj = new DataRow();
@@ -8029,10 +8097,9 @@ package autoevony.management
     		obj.label = "Max storage: " + resource.iron.max + 
     			"\nAsk: " + buyAmount(TradeConstants.RES_TYPE_IRON) + "@" + buyPrice(TradeConstants.RES_TYPE_IRON) +
     			"\nBid: " + sellAmount(TradeConstants.RES_TYPE_IRON) + "@" + sellPrice(TradeConstants.RES_TYPE_IRON);
-
     		data.addItem(obj);    		
 
-    		obj = new DataRow(); 
+    		obj = new DataRow();    					
     		obj.col1 = "Population"; obj.col2 = resource.curPopulation; 
     		obj.col3 = "";
     		obj.col4 = "";
@@ -8040,9 +8107,8 @@ package autoevony.management
     		obj.label = "Max population: " + resource.maxPopulation + 
     			"\nWorkers: " + resource.workPeople +
     			"\nIdle: " + (resource.curPopulation - resource.workPeople);
-
     		data.addItem(obj);    		
-
+    		
 			DataRow.copyRowArray(data, arr);
     	} 
     	
@@ -8115,7 +8181,7 @@ package autoevony.management
     			} else if ( hero.status == HeroConstants.HERO_SEIZED_STATU ) {
 					obj.bgColor = 0xFDFFCF;
 					obj.col4 = hero.id;
-					obj.col9 = "release";
+					obj.col9 = "fire";
     			} else if ( hero.status == HeroConstants.HERO_BACK_STATU ) {
 					obj.bgColor = 0xCFCFFF;
 					obj.col4 = hero.id;
@@ -8473,11 +8539,13 @@ package autoevony.management
     			} else {
     				obj.bgColor = 0xEEEEEE;
     			}
+    			
     			obj.col3 = player.prestige;
     			obj.col4 = player.honor;    			
     			obj.col5 = Utils.getSortableDateString(player.lastLoginTime);
     			obj.col6 = player.castleCount;
     			obj.col7 = player.population;
+    			obj.col8 = player.ranking;
 	    		data.addItem(obj);
         	}
         	DataRow.copyRowArray(data, arr);
@@ -8578,6 +8646,7 @@ package autoevony.management
 				obj.col1 = troopExtNames[type];
 				obj.col2 = Utils.formatNum(fortification[ troopIntNames[type] ]);
 				obj.col3 = Utils.formatNum(prod[ troopIntNames[type] ]);
+				obj.col4 = fortificationsRequirement[ troopIntNames[type] ];
 				data.addItem(obj);			
 			}
 			

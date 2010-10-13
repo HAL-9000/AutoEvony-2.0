@@ -235,6 +235,7 @@ package autoevony.player
 					var strPos:int = 2 * ((y-response.y1) * mapwidth + (x-response.x1));
 					var fieldId:int = getFieldId(x,y);
 					map[fieldId] = int("0x" + response.mapStr.substr(strPos, 2));
+					cacheDetail(fieldId);
 					setPixel(fieldId, 0xFFFFFF);					
 				}
 			}
@@ -299,7 +300,7 @@ package autoevony.player
 		}
 		
 		private static function cacheDetail(fieldId:int) : void {
-			if (pendingFieldId.length > 100) return;
+			if (pendingFieldId.length > 1000) return;
 			pendingFieldId.push(fieldId);
 			
 			if (timer == null) {

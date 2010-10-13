@@ -3,6 +3,7 @@
 	creationComplete="init()" width="100%" height="100%" paddingBottom="0" xmlns:ns1="autoevony.gui.*">
 	<mx:Script>
 		<![CDATA[
+			import com.umge.sovt.common.beans.BuffBean;
 			import com.umge.sovt.common.beans.UnitAlliance;
 			import autoevony.event.ScriptLogEvent;
 			import autoevony.common.Utils;
@@ -152,7 +153,14 @@
 	        	currentPlayer = loginResponse.player; 
 	        	Map.initMap(currentPlayer.mapSizeX, currentPlayer.mapSizeY, currentPlayer.playerInfo.userName);
 	        	Utils.setServerTime(currentPlayer.currentTime);
-
+				var buffs:ArrayCollection = currentPlayer.buffsArray;
+				var buff:BuffBean = new BuffBean();
+				var buffcount:int = 0;
+				while ( buffcount < buffs.length) {
+					buff = buffs[ buffcount ]
+					appendToTextArea(logs, "Buffs: " + buff.descName + " " + buff.endTime + " " + buff.typeId );					
+					buffcount ++;
+				}
 	        	var date:Date = new Date();
 	        	date.setTime(Utils.getServerTime());
 	        	appendToTextArea(logs, "<b>Logged in successfully, server time difference: " + (Utils.getServerLagTime()/1000) + "s</b>");

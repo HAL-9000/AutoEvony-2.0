@@ -129,7 +129,7 @@
 			public function getCity() : CityState { return city; }
 			public function cleanup() : void { timer.stop(); }
 	        
-	        private function updateAllInfo(obj:Object = null) : void {
+	        private function updateAllInfo(obj:Object = null) : void {	        		        	
 	        	if (obj != null && !visible) return;
 	        	
 	        	if (obj == null || allinfo.selectedChild == info) {
@@ -137,7 +137,7 @@
 	        	}
 	        	if (obj == null || allinfo.selectedChild == resource) {
 	        		city.cityManager.updateResourceData(resourceData);
-	        	}
+	        	}	        	
 	        	if (obj == null || allinfo.selectedChild == valley) {
 	        		city.cityManager.updateValleyData(valleyData);
 				}
@@ -784,6 +784,7 @@
 							<mx:DataGridColumn headerText="Fortification" dataField="col1" width="0.25"/>
 							<mx:DataGridColumn headerText="Available" dataField="col2" width="0.25"/>
 							<mx:DataGridColumn headerText="In Queues" dataField="col3" width="0.25"/>
+							<mx:DataGridColumn headerText="Goal" dataField="col4" width="0.25"/>
 						</mx:columns>
 					</mx:DataGrid>	
 				</mx:Canvas>
@@ -857,7 +858,8 @@
 						selectable="false" horizontalScrollPolicy="off" variableRowHeight="true" minHeight="30" rowHeight="16" minColumnWidth="65">
 						<local:columns>
 							<mx:DataGridColumn headerText="Name" dataField="col1" width="120"/>
-							<mx:DataGridColumn headerText="Rank" dataField="col2" width="70" resizable="false"/>
+							<mx:DataGridColumn headerText="Ranking" dataField="col8" width="120"/>
+							<mx:DataGridColumn headerText="Position" dataField="col2" width="70" resizable="false"/>
 							<mx:DataGridColumn headerText="Prestige" dataField="col3" width="75" textAlign="right" resizable="false"/>
 							<mx:DataGridColumn headerText="Honor" dataField="col4" width="75" textAlign="right" resizable="false"/>							
 							<mx:DataGridColumn headerText="Last Login" dataField="col5" width="150" resizable="false"/>

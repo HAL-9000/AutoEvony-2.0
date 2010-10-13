@@ -97,7 +97,7 @@ package autoevony.scripts
 			this.castle = castle;
 			this.player = player;
 			cityManager = new CityManager(castle, player);
-			
+						
 			ResponseDispatcher.getInstance().addEventListener(ResponseDispatcher.SERVER_SELF_ARMYS_UPDATE, updateSelfArmies);
 			ResponseDispatcher.getInstance().addEventListener(ResponseDispatcher.SERVER_HERO_UPDATE, updateHeros);
 			ResponseDispatcher.getInstance().addEventListener(ResponseDispatcher.SERVER_TROOP_UPDATE, updateTroops);
@@ -150,6 +150,11 @@ package autoevony.scripts
 			cityManager.listMedals();
 			onCommandFinished(true);
 		}
+		public function updatealldata():void {
+			currentAction = "updatealldata";
+			
+			onCommandFinished(true);
+		}		
 		public function listitems():void {
 			currentAction = "listitems";
 			cityManager.listAllItems();
