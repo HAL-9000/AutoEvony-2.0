@@ -6198,7 +6198,7 @@ package autoevony.management
 				if ( INCOMING_ATTACKS == true) {
 					INCOMING_ATTACKS = false;
 					if (getConfig(CONFIG_WARRULES) > 0) {
-						ActionFactory.getInstance().getCommonCommands().allianceChat( "No Incoming Attacks " , 0);
+						ActionFactory.getInstance().getCommonCommands().allianceChat( "No Attacks heading to " + castle.name , 0);
 					}	
 				}				
 			} else {
@@ -6211,7 +6211,7 @@ package autoevony.management
 					break;
 				}				
 
-				var interval:int = (ind == -1 || enemyArmies[ind].reachTime > Utils.getServerTime() + 3600*1000) ? 600 : 60;
+				var interval:int = (ind == -1 || enemyArmies[ind].reachTime > Utils.getServerTime() + 3600*1000) ? 120 : 60;
 				if (cityTimingAllowed("attack", interval)) {
 					if (cityTimingAllowed("allattacks", 60)) {
 						logMessage("ATTACK by: " + attackArmyToString(enemyArmies[0]) + ", " + enemyArmies.length + " waves" , "#ff0000");
@@ -6221,8 +6221,16 @@ package autoevony.management
 							if (isJunkTroop(a.troop)) continue;
 							logMessage("Attack: [" + (i+1) + "] " + attackArmyToString(a), "#ff0000");
 							attackmessage.push("Next wave: [" + (i+1) + "] " + attackArmyToString(a));
-						}												
-						attackmessage.push("My Embassy is Lvl: " + EMBASSY_LEVEL + " with " + friendlyArmies.length + " slots filled" );
+						}										
+						var gate:Boolean = castle.goOutForBattle;
+						var gatestr:String = "Unknown";	
+						if ( gate == true ) {
+							gatestr = "OPEN";
+						} 	else {
+							gatestr = "CLOSED";							
+						}	
+						attackmessage.push("My Embassy @ " + castle.name + " is Lvl: " + EMBASSY_LEVEL + " with " + friendlyArmies.length +
+						 " slots filled ... and my gates are " + gatestr );
 						if (getConfig(CONFIG_WARRULES) > 0) {
 							for (ii = 0; ii <= attackmessage.length; ii++) {
 								ActionFactory.getInstance().getCommonCommands().allianceChat( attackmessage[ii] , 0);

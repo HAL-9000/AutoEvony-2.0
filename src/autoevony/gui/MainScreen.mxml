@@ -156,6 +156,8 @@
 				var buffs:ArrayCollection = currentPlayer.buffsArray;
 				var buff:BuffBean = new BuffBean();
 				var buffcount:int = 0;
+				
+				
 				while ( buffcount < buffs.length) {
 					buff = buffs[ buffcount ]
 					appendToTextArea(logs, "Buffs: " + buff.descName + " expires in " + remainTime(buff.endTime));					
