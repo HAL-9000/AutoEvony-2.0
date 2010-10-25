@@ -293,7 +293,7 @@ package autoevony.management
 
 			while (market.length < 4) market.addItem(null);
 			
-			timer = new Timer(10000);
+			timer = new Timer(5000);
 			timer.addEventListener(TimerEvent.TIMER, onTimer);
 			timer.start();
 			
@@ -1293,6 +1293,95 @@ package autoevony.management
 			if (newTech) researches.addItem(response.tech); // to be safe
 		}		
 
+		private function handleBuilding():void {
+            var loc1:*=0;
+            var loc2:*=0;
+            var loc3:*=null;
+            var loc4:*=null;
+            var loc5:*=null;
+            var loc7:*=null;
+            var loc6:*;
+            if ((loc6 = getActiveBuilding()) != null) 
+            {
+                return;
+            }
+            loc3 = nextBuildingCondition();
+            if (loc3 == null) 
+            {
+                return;
+            }
+            loc4 = getConditionBeanForUpgradingTo(loc3);
+            if (!cityTimingAllowed("building", 15)) 
+            {
+                return;
+            }
+            if (loc3.level != 0) 
+            {
+                if (loc3.level != 1) 
+                {
+                    loc2 = selectBuildingPosition(loc3.typeId, (loc3.level - 1));
+                    if (loc2 == -1000) 
+                    {
+                        if (currRequirements.getItemIndex(loc3) != -1) 
+                        {
+                            currRequirements.removeItemAt(currRequirements.getItemIndex(loc3));
+                        }
+                        handleBuilding();
+                        return;
+                    }
+                    logMessage("upgrade building " + autoevony.common.BuildingType.toString(loc3.typeId) + " to level " + loc3.level + " at location " + loc2);
+                    promotePoliticsChief();
+                    com.umge.sovt.client.action.ActionFactory.getInstance().getCastleCommands().upgradeBuilding(castle.id, loc2);
+                    loc8 = 0;
+                    loc9 = resourceIntNames;
+                    for each (loc5 in loc9) 
+                    {
+                        estResource[loc5] = estResource[loc5] - loc4[loc5];
+                    }
+                }
+                else 
+                {
+                    loc2 = selectEmptyPosition(loc3.typeId);
+                    if (loc2 == -1000) 
+                    {
+                        if (currRequirements.getItemIndex(loc3) != -1) 
+                        {
+                            currRequirements.removeItemAt(currRequirements.getItemIndex(loc3));
+                        }
+                        handleBuilding();
+                        return;
+                    }
+                    logMessage("build new building " + autoevony.common.BuildingType.toString(loc3.typeId) + " at location " + loc2);
+                    promotePoliticsChief();
+                    com.umge.sovt.client.action.ActionFactory.getInstance().getCastleCommands().newBuilding(castle.id, loc2, loc3.typeId);
+                    var loc8:*=0;
+                    var loc9:*=resourceIntNames;
+                    for each (loc5 in loc9) 
+                    {
+                        estResource[loc5] = estResource[loc5] - loc4[loc5];
+                    }
+                }
+            }
+            else 
+            {
+                if ((loc7 = getLowestLevelBuilding(loc3.typeId)) == null) 
+                {
+                    if (currRequirements.getItemIndex(loc3) != -1) 
+                    {
+                        currRequirements.removeItemAt(currRequirements.getItemIndex(loc3));
+                    }
+                    handleBuilding();
+                    return;
+                }
+                logMessage("demolish building " + autoevony.common.BuildingType.toString(loc7.typeId) + ":" + loc7.level + " at location " + loc7.positionId);
+                promotePoliticsChief();
+                com.umge.sovt.client.action.ActionFactory.getInstance().getCastleCommands().destructBuilding(castle.id, loc7.positionId);
+            }
+            com.umge.sovt.client.action.ActionFactory.getInstance().getCastleCommands().speedUpBuildCommand(castle.id, loc2, com.umge.sovt.common.constants.CommonConstants.FREE_SPEED_ITEM_ID);
+            return;
+        }
+        
+        /*
 		private function handleBuilding() : void {
 			var ind:int;
 			var posId:int;
@@ -1362,7 +1451,7 @@ package autoevony.management
 			ActionFactory.getInstance().getCastleCommands().speedUpBuildCommand(castle.id, posId, CommonConstants.FREE_SPEED_ITEM_ID);
 		}
 		
-		
+		*/
 
 		private function handleResearching() : void {
 			var ind:int;
@@ -3441,8 +3530,7 @@ package autoevony.management
 			ActionFactory.getInstance().getTroopCommands().getProduceQueue(castle.id);
 		}
 		private function handleTroopProduceQueueResponse(response:ProduceQueueResponse) : void {
-			if (!masterTimer.canReceive(timeSlot)) return;
-
+			if (!masterTimer.canReceive(timeSlot)) return;			
 			troopProduceQueue = response.allProduceQueueArray;
 		}
 		
@@ -3703,6 +3791,12 @@ package autoevony.management
 			// add troop from production queue to totalTroop
 			for each(allProduceBean in troopProduceQueue) {
 				for each(produceBean in allProduceBean.allProduceQueueArray) {
+					if ( produceBean.endTime > 0 ) {
+						logDebugMsg(DEBUG_TROOP, produceBean.queueId + " In Queue: " + troopIntNames[produceBean.type] + " " + produceBean.num + " finishes in " + remainTime(produceBean.endTime) );
+					} 
+					if ( produceBean.costTime > 0 ) {
+						logDebugMsg(DEBUG_TROOP, produceBean.queueId + " In Queue: " + troopIntNames[produceBean.type] + " " + produceBean.num + "  will take  " + Utils.formatTime(produceBean.costTime) );
+					}
 					totalTroop[ troopIntNames[produceBean.type] ] += produceBean.num;
 				}
 			}
@@ -7289,6 +7383,8 @@ package autoevony.management
 				logMessage("Not enough resource to send out attack");
 				return;
 			}
+			
+			
 			logMessage("Guarded attack on " + Map.fieldIdToString(fieldId) + " with hero " + hero.name + " in " + Utils.formatTime(attackTime));
 			ActionFactory.getInstance().getCastleCommands().checkOutUpgrade(castle.id, RALLY_POSITION);
 			ActionFactory.getInstance().getArmyCommands().getTroopParam(castle.id);			

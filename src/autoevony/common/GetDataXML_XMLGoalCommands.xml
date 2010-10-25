@@ -45,7 +45,7 @@
       <parameter name="1" type="String" optional="false"/>
     </method>
     <method name="persuadehero" desciption="" example="">
-      <parameter name="1" type="String" optional="false"/>
+      <parameter name="HeroName" type="String" optional="false"/>
     </method>
     <method name="resourcelimits" desciption="" example="">
       <parameter name="1" type="Number" optional="false"/>

@@ -11,6 +11,7 @@
 			import autoevony.common.MD5;
 			import autoevony.management.CityManager;
 			import autoevony.net.Connection;
+			import autoevony.gui.WarCities;
 			import autoevony.scripts.CityState;
 			import mx.core.SoundAsset;
 			import com.umge.sovt.common.server.events.ChannelChatMsg;
@@ -170,6 +171,7 @@
 	        		appendToTextArea(logs, "<b>Your current computer time: " + new Date().toLocaleTimeString() + "</b>");
 	        		appendToTextArea(logs, "<b>PLEASE AVOID ADJUSTING YOUR COMPUTER CLOCK WHILE THE BOT IS RUNNING. IF YOU DO ADJUST, BE SURE TO CLICK ON REFRESH.</b>");
 	        	}
+	        		        		       
 	        	parseCities(currentPlayer.castlesArray.toArray(), currentPlayer);
 	        		        	
 	        	citiesTab.dataProvider = citiesViewStack;
@@ -382,7 +384,23 @@
 		        				found = true;
 		        			}
 		        		}
-	
+						
+						//var warCity:WarCities = new WarCities();
+						
+						/*
+						warCity.allTroops.peasants = warCity.allTroops.peasants + castle.troop.peasants;
+						warCity.allTroops.militia = warCity.allTroops.militia + castle.troop.militia;
+						warCity.allTroops.scouter = warCity.allTroops.scouter + castle.troop.scouter;
+						warCity.allTroops.pikemen = warCity.allTroops.pikemen + castle.troop.pikemen;
+						warCity.allTroops.swordsmen = warCity.allTroops.swordsmen + castle.troop.swordsmen;
+						warCity.allTroops.archer = warCity.allTroops.archer + castle.troop.archer;
+						warCity.allTroops.lightCavalry = warCity.allTroops.lightCavalry + castle.troop.lightCavalry;
+						warCity.allTroops.heavyCavalry = warCity.allTroops.heavyCavalry + castle.troop.heavyCavalry;
+						warCity.allTroops.carriage = warCity.allTroops.carriage + castle.troop.carriage;
+						warCity.allTroops.ballista = warCity.allTroops.ballista + castle.troop.ballista;
+						warCity.allTroops.batteringRam = warCity.allTroops.batteringRam + castle.troop.batteringRam;
+						warCity.allTroops.catapult = warCity.allTroops.catapult + castle.troop.catapult; 
+						*/
 		        		if (found) continue;
 	
 						// new city	    
