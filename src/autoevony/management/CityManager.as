@@ -65,7 +65,7 @@ package autoevony.management
 		private static var CONFIG_WARREPORT:String = "warreport";
 		private static var CONFIG_WARRULES:String = "warrules";
 		private static var CONFIG_ATTACKWARNING:String = "attackwarning";
-		private static var CONFIG_MAINTENANCE:String = "maintenace";
+		private static var CONFIG_MAINTENANCE:String = "maintenance";
 		
 		private static var DEBUG_NORMAL:int = 1;
 		private static var DEBUG_POPULATION:int = 10;
