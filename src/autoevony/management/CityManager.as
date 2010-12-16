@@ -808,6 +808,9 @@ package autoevony.management
 		public function getWarningStatus() : Boolean {
 			return (getConfig(CONFIG_ATTACKWARNING) > 0);
 		}
+		public function getMaintenanceDelay() : int {
+			return configs[CONFIG_MAINTENANCE];
+		}
 		
 		private function getConfig(str:String) : Number {
 			if (configs[str] == undefined) return 0;
