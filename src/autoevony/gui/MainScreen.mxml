@@ -11,7 +11,7 @@
 			import autoevony.common.MD5;
 			import autoevony.management.CityManager;
 			import autoevony.net.Connection;
-			import autoevony.gui.WarCities;
+			import autoevony.gui.*;
 			import autoevony.scripts.CityState;
 			import mx.core.SoundAsset;
 			import com.umge.sovt.common.server.events.ChannelChatMsg;

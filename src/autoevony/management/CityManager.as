@@ -65,6 +65,7 @@ package autoevony.management
 		private static var CONFIG_WARREPORT:String = "warreport";
 		private static var CONFIG_WARRULES:String = "warrules";
 		private static var CONFIG_ATTACKWARNING:String = "attackwarning";
+		private static var CONFIG_MAINTENANCE:String = "maintenace";
 		
 		private static var DEBUG_NORMAL:int = 1;
 		private static var DEBUG_POPULATION:int = 10;
@@ -211,6 +212,7 @@ package autoevony.management
 		private var valleyTroopBean:TroopBean = null;
 		private var huntingLocation:int = -1;
 		private var huntingType:int = -1;
+		private var maintenancedelay:int = -1;
 		private var trainingHeroName:String = null;
 		private var trainingHeroNextStop:int = -1;
 		private var trainingHeroNeeded:Boolean = true;
@@ -591,7 +593,7 @@ package autoevony.management
 				CONFIG_NPC, CONFIG_NPCLIMIT, CONFIG_COMFORT, CONFIG_RESEARCH, CONFIG_BUILDING, CONFIG_TRADING,
 				CONFIG_FORTIFICATION, CONFIG_TROOP, CONFIG_HERO, CONFIG_HUNTING, CONFIG_HIDING,  
 				CONFIG_BUILDNPC, CONFIG_DEBUG, CONFIG_VALLEY, CONFIG_DUMPING, CONFIG_TRAINING, CONFIG_FASTHERO,
-				CONFIG_ABANDON, CONFIG_GATE, CONFIG_WARREPORT, CONFIG_WARRULES, CONFIG_ATTACKWARNING, CONFIG_NPC);
+				CONFIG_ABANDON, CONFIG_GATE, CONFIG_WARREPORT, CONFIG_WARRULES, CONFIG_ATTACKWARNING, CONFIG_NPC, CONFIG_MAINTENANCE);
 			if (str == null) {
 				logError("Empty config, available: " + configNames.join(" "));
 				return false;
@@ -650,6 +652,11 @@ package autoevony.management
 				configs[CONFIG_WARREPORT] = 0;
 			}
 			
+			if (getConfig(CONFIG_MAINTENANCE) > 0 && !isMainTown()) {
+				logMessage("WARNING: maintenance works only on the first town " + player.castlesArray[0].name + ", option disabled");
+				configs[CONFIG_MAINTENANCE] = 45;
+			} 
+
 			if (getConfig(CONFIG_ATTACKWARNING) > 0 && !isMainTown()) {
 				logMessage("WARNING: sound attack warning works only on the first town " + player.castlesArray[0].name + ", option disabled");
 				configs[CONFIG_ATTACKWARNING] = 0;
