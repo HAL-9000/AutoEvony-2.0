@@ -205,6 +205,7 @@ package autoevony.management
 		private var npcHeroes:Array = null;
 		private var spamHeroes:Array = null;
 		private var npcTroopBean:TroopBean = null;
+		private var npcTeams:int = 10
 		private var npc10List:Array = null;
 		private var npc10Heroes:Array = null;
 		private var npc10TroopBean:TroopBean = null;
@@ -5755,8 +5756,10 @@ package autoevony.management
 				if (countIdleHeroes() <= 2) return false;
 				extraSlot = 1;
 			}
-
-			if (countActiveArmies() + extraSlot >= getBuildingLevel(BuildingConstants.TYPE_TRAINNING_FEILD)) return false;
+			
+			var activeArmies:int = countActiveArmies();
+			if (activeArmies >= npcTeams) return false;
+			if (activeArmies + extraSlot >= getBuildingLevel(BuildingConstants.TYPE_TRAINNING_FEILD)) return false;
 
 			logDebugMsg(DEBUG_NPCATTACK, "checking troop to attack npc, ballista: " + troop.ballista);
 
@@ -6431,11 +6434,11 @@ package autoevony.management
 
 			var newArmy:NewArmyParam = new NewArmyParam();
 			newArmy.troops = new TroopBean();
-			newArmy.troops.carriage = Math.min(rsLevel * 10000, troop.carriage - 1);	// leave 1 for layering if need be
 			
-			// when there are not a lot of archers, hide the ballista
-			if (troop.archer < 100000 && troop.ballista > 1) newArmy.troops.ballista = Math.min(troop.ballista - 1, rsLevel * 10000 - newArmy.troops.carriage);
-
+			if ( troop.ballista > 1) newArmy.troops.ballista = Math.min(troop.ballista - 1, NPCBALLISTAS[5]*npcTeams);
+			
+			if ( troop.carriage > 1) newArmy.troops.carriage = Math.min(troop.carriage - 1, rsLevel * 10000 - newArmy.troops.ballista);	// leave 1 for layering if need be
+		
 			// horses are terrible at defense
 			if (troop.heavyCavalry > 0) {
 				newArmy.troops.heavyCavalry = (troop.heavyCavalry >= 20) ? troop.heavyCavalry - 10 : troop.heavyCavalry - 1;
@@ -6450,6 +6453,11 @@ package autoevony.management
 			if (troop.pikemen > 0) {
 				newArmy.troops.pikemen = (troop.pikemen >= 20) ? troop.pikemen - 10 : troop.pikemen - 1;
 				newArmy.troops.pikemen = Math.min(newArmy.troops.pikemen, rsLevel * 10000 - newArmy.troops.carriage - newArmy.troops.ballista - newArmy.troops.heavyCavalry - newArmy.troops.lightCavalry);
+			}
+			
+			if (troop.swordsmen > 0) {
+				newArmy.troops.swordsmen = (troop.swordsmen >= 20) ? troop.swordsmen - 10 : troop.swordsmen - 1;
+				newArmy.troops.swordsmen = Math.min(newArmy.troops.swordsmen, rsLevel * 10000 - newArmy.troops.carriage - newArmy.troops.ballista - newArmy.troops.heavyCavalry - newArmy.troops.lightCavalry - newArmy.troops.pikemen);
 			}
 
 			newArmy.targetPoint = evasionFieldId;
@@ -8891,6 +8899,13 @@ package autoevony.management
 				} else if (args[0] == "traininghero") {
 					trainingHeroName = args[1];
 					trainingHeroNeeded = true;
+				} else if (args[0] == "npcteams") {
+					if (!Utils.isNumeric(args[1])) {
+						logError("Invalid npcteams number: " + args[1]);
+						good = false;
+					} else {
+						npcTeams = args[1];
+					}	
 				} else {
 					logMessage("Error: " + args[0] + " must be among build, research, config, ballsused, troop, fortification, npclist, npctroops, npcheroes, npc10list, npc10troops, npc10heroes, valleytroop, huntingpos, traininghero, nexttrainingpos, spamheroes, gatepolicy, distancepolicy");
 					good = false;
