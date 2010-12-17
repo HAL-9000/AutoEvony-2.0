@@ -687,14 +687,7 @@ package autoevony.scripts
     		onCommandFinished(true);
         }
 
-/* 		public function autofarm(scanfor:String="", hero:String="", troops:String="", centercoords:String="") : void
-		{
-			currentAction = "autofarm";
-			onCommandResult("Auto farm has been disabled, please use findfield instead.", "", "#ff0000");
-			onCommandResult("Ex: findfield npc 5 10 any t:400,b:400", "", "#ff0000");
-			onCommandFinished(true);
-		} */
-		
+
 		public function refreshinn() : void {
 			currentAction = "refreshinn";
 			cityManager.refreshinn();
